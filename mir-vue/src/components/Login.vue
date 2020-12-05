@@ -54,13 +54,13 @@ export default {
   data () {
     return {
       email: 'dakobedbard@gmail.com',
-      password: '1!Iksarmanssss',
+      password: '1!ZionTF',
       error: null,
       loading: false
     }
   },
-
   methods: {
+    ...mapActions(["setJWT", "setEmail"]),
     login () {
         this.loading = true
         /*eslint no-unused-vars: "off"*/
@@ -68,16 +68,18 @@ export default {
             if (err) {
                 this.error = err
                 this.loading = false
-                
-// this.setEmail(this.email)
             } else {
+                var id_token = result.idToken.jwtToken
+                var access_token = result.accessToken.jwtToken
+                var refreshToken = result.accessToken.refreshToken
+                var tokens = {access:access_token, id:id_token, refresh: refreshToken}
+                this.setJWT(tokens)
                 this.setEmail(this.email)
-                this.$router.push('/')
+                this.$router.push({name:'upload'})
+                // this.$router.push({name:'storefront'})
             }
         });
-    },
-    ...mapActions(["setEmail"]),
-    
+    }
   }
 }
 </script>

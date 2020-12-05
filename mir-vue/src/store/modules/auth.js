@@ -12,6 +12,7 @@ const state = {
     errorLoadingState:false,
     access_token: false,
     idToken: false,
+    refresh_token: false,
     email: false
 
 };
@@ -20,7 +21,8 @@ const getters = {
     getJwtAccessToken: state => state.access_token,
     getLoggedIn: state => state.loggedIn,
     getIdToken: state => state.idToken,
-    getEmail: state => state.email
+    getEmail: state => state.email,
+    get_refresh_token: state => state.refresh_token
 
 };
 
@@ -99,8 +101,9 @@ const mutations = {
     setCognitoInfo:(state, newValue) => (state.cognitoInfo= newValue),
     setAccessToken:(state, tokens) => {//token, idToken) => {
         state.loggedIn = true;
-        state.access_token = tokens.acces;
+        state.access_token = tokens.access;
         state.idToken = tokens.id
+        state.refresh_token = tokens.refresh
     }
 };
 
