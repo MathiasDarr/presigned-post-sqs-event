@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'query-ap Sample SAM Template for query-api
+
+  '
+Resources:
+  AuthorizationLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: AuthorizationLayer
+      ContentUri: s3://dakobed-serverless-apis/3ff94234273672c11784c3fa6f8cc03f
+      CompatibleRuntimes:
+      - python3.7
+    Metadata:
+      BuildMethod: python3.7
+Outputs:
+  AuthorizationLayer:
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - AuthorizationLayer
+    Value:
+      Ref: AuthorizationLayer
