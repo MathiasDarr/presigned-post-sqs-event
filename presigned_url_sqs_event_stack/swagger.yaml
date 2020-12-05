@@ -1,0 +1,67 @@
+swagger: "2.0"
+info:
+  description: "Serverless API"
+  version: "1.0.0"
+  title: "Librosa Transforms API"
+
+
+paths:
+  /signedURL:
+    options:
+      responses:
+        200:
+          description: "Success"
+          headers:
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+          schema:
+            $ref: "#/definitions/Empty"
+      x-amazon-apigateway-integration:
+        contentHandling: CONVERT_TO_TEXT
+        type: "mock"
+        httpMethod: "POST"
+        requestTemplates:
+           "application/json": "{\"statusCode\": 200}"
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+
+    post:
+      tags:
+        - "products"
+      summary: "return snotel data by location ID"
+      description: "Returns snotel data for a single location over range of dates specified by query params"
+      operationId: "getSnotelByLocation"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: string
+      # For AWS Integration
+      x-amazon-apigateway-request-validators:
+        basic:
+          validateRequestParameters: true
+      x-amazon-apigateway-integration:
+        type: "aws_proxy"
+        httpMethod: "POST"
+        # Replace AWS_REGION and ACCOUNT_ID in uri
+        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:710339184759:function:PresignedPostUploadFunction/invocations"
+#        responses:
+#          default:
+#            statusCode: 200
+#            responseParameters:
+#              method.response.header.Access-Control-Allow-Origin: "'*'"
+#        passthroughBehavior: "when_no_templates"
