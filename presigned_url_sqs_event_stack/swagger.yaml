@@ -65,3 +65,5 @@ paths:
 #            responseParameters:
 #              method.response.header.Access-Control-Allow-Origin: "'*'"
 #        passthroughBehavior: "when_no_templates"
+#        requestTemplates:
+#          application/json: "{\r\n   \"body\" : \"$input.body\",\r\n  \"headers\": {\r\n  #foreach($param in $input.params().header.keySet())\r\n   }  \r\n}"

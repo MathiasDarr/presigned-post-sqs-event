@@ -38,7 +38,7 @@ export default {
                 var name = this.file.name
                 console.log(name)
                 var url ='https://cr5nlv4c58.execute-api.us-west-2.amazonaws.com/Prod/signedURL'
-                var body = {userID:this.getEmail, filename:name}
+                var body = {filename:name}
                 
                 const response = await axios.post(url, body, {
                   headers: {

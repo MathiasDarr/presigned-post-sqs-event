@@ -21,4 +21,4 @@
 
 
 
-{"filename": "jazz3_solo.wav", "userID": "dakobedbard@gmail.com"}
+{"filename" : "jazz3_solo.wav"}

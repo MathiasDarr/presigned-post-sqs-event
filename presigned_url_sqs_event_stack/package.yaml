@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Dakobed Rest API Service
 Parameters:
+  Region:
+    Type: String
+    Default: us-west-2
   QueueName:
     Type: String
     Default: LibrosaTransformsQueue
@@ -14,7 +17,7 @@ Resources:
     Properties:
       Name: UploadApi
       StageName: Prod
-      DefinitionUri: s3://dakobed-serverless-apis/d303d9ef95d6419af485613526063d0c
+      DefinitionUri: s3://dakobed-serverless-apis/6a1eb8ecb9421eb9495eb1ba50f69290
   PresignedPostUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -29,13 +32,21 @@ Resources:
       - AWSLambdaBasicExecutionRole
       - DynamoDBCrudPolicy:
           TableName: UserUploads
-      CodeUri: s3://dakobed-serverless-apis/8b33afecbc2735d4174d7714510a4d35
+      CodeUri: s3://dakobed-serverless-apis/d8d6d02585aae7801b0a445900a5af24
       Handler: app.lambda_handler
       Runtime: python3.7
+      Layers:
+      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
       Environment:
         Variables:
           UploadBucket:
             Ref: BucketName
+          userpool_id:
+            Fn::ImportValue: upload-api-userpool-stack:UserPool
+          app_client_id:
+            Fn::ImportValue: upload-api-userpool-stack:UserPoolClient
+          region:
+            Ref: Region
       Events:
         UploadApi:
           Type: Api

@@ -3,6 +3,9 @@ Transform: AWS::Serverless-2016-10-31
 Description: Dakobed Rest API Service
 
 Parameters:
+  Region:
+    Type: String
+    Default: us-west-2
   QueueName:
     Type: String
     Default: LibrosaTransformsQueue
@@ -34,9 +37,17 @@ Resources:
       CodeUri: handlers/signedURL
       Handler: app.lambda_handler
       Runtime: python3.7
+
+      Layers:
+        - !ImportValue upload-authorization-layer-stack:AuthorizationLayer
+
       Environment:
         Variables:
           UploadBucket: !Ref BucketName
+          userpool_id: !ImportValue upload-api-userpool-stack:UserPool
+          app_client_id: !ImportValue upload-api-userpool-stack:UserPoolClient
+          region: !Ref Region
+
       Events:
         UploadApi:
           Type: Api
