@@ -48,6 +48,11 @@ export default {
 
                 var data = response.data.presigned 
                 
+                var object_url = data['url']
+                var key = data['fields']['key']
+                console.log(object_url+key)
+
+
                 let form = new FormData()
                 Object.keys(data.fields).forEach(key=>form.append(key, data.fields[key]))
                 form.append('file', this.file)

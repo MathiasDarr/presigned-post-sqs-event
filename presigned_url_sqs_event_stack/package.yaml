@@ -65,39 +65,6 @@ Resources:
       FunctionName:
         Ref: PresignedPostUploadFunction
       Principal: apigateway.amazonaws.com
-  VerifyUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 10
-      FunctionName: VerifyUploadFunction
-      Policies:
-      - SQSSendMessagePolicy:
-          QueueName: InitiateTransformsQueue
-      - AWSLambdaBasicExecutionRole
-      - DynamoDBCrudPolicy:
-          TableName:
-            Ref: UserUploadTable
-      CodeUri: s3://dakobed-serverless-apis/d8d6d02585aae7801b0a445900a5af24
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Layers:
-      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
-      Environment:
-        Variables:
-          userpool_id:
-            Fn::ImportValue: upload-api-userpool-stack:UserPool
-          app_client_id:
-            Fn::ImportValue: upload-api-userpool-stack:UserPoolClient
-          region:
-            Ref: Region
-      Events:
-        UploadApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: UploadApi
-            Path: /signedURL
-            Method: POST
   UserUploadTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -122,11 +89,11 @@ Resources:
       BucketName:
         Ref: BucketName
       NotificationConfiguration:
-        QueueConfigurations:
+        LambdaConfigurations:
         - Event: s3:ObjectCreated:Post
-          Queue:
+          Function:
             Fn::GetAtt:
-            - TransformQueue
+            - VerifyUploadFunction
             - Arn
       CorsConfiguration:
         CorsRules:
@@ -139,6 +106,69 @@ Resources:
           - POST
           AllowedOrigins:
           - '*'
+  VerifyUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: VerifyUploadFunction
+      Policies:
+      - SQSSendMessagePolicy:
+          QueueName: InitiateTransformsQueue
+      - AWSLambdaBasicExecutionRole
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UserUploadTable
+      CodeUri: s3://dakobed-serverless-apis/1a6321abe9aa811ebfd55e4208c8e791
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Role:
+        Fn::GetAtt:
+        - LambdaIAMRole
+        - Arn
+      Layers:
+      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
+      Environment:
+        Variables:
+          userpool_id:
+            Fn::ImportValue: upload-api-userpool-stack:UserPool
+          app_client_id:
+            Fn::ImportValue: upload-api-userpool-stack:UserPoolClient
+          region:
+            Ref: Region
+          user_upload_table:
+            Ref: UserUploadTable
+  LambdaIAMRole:
+    Type: AWS::IAM::Role
+    DependsOn: S3UploadBucket
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:GetBucketNotification
+            - s3:PutBucketNotification
+            - s3:PostBucketNotification
+            Resource:
+              Fn::Sub: arn:aws:s3:::${BucketName}
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
   TransformQueue:
     Type: AWS::SQS::Queue
     Properties:
