@@ -14,6 +14,13 @@ Parameters:
   UserUploadTableName:
     Type: String
     Default: UserUploadTable
+  DynamoEndpoint:
+    Type: String
+    Default: cloud
+    AllowedValues:
+    - http://dynamo-local:8000
+    - cloud
+    Description: http://dynamo-local:8000, cloud
 Resources:
   UploadApi:
     Type: AWS::Serverless::Api
@@ -135,14 +142,13 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      Policies:
-      - DynamoDBCrudPolicy:
-          TableName:
-            Ref: UserUploadTableName
-      CodeUri: s3://dakobed-serverless-apis/2c97aa668440a8b0c622623ab83093c0
+      Policies: null
+      CodeUri: s3://dakobed-serverless-apis/ddb54a058e2e3ddd4d4f2426acef7424
       Handler: app.lambda_handler
       Environment:
         Variables:
+          dynamo_endpoint:
+            Ref: DynamoEndpoint
           user_upload_table:
             Ref: UserUploadTableName
       Runtime: python3.7
@@ -174,6 +180,17 @@ Resources:
           Action:
           - sts:AssumeRole
       Policies:
+      - PolicyName: dynamo_user_table_policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:PutItem
+            Resource:
+              Fn::GetAtt:
+              - UserUploadTable
+              - Arn
       - PolicyName: allowLogging
         PolicyDocument:
           Version: '2012-10-17'

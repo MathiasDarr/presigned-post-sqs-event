@@ -12,10 +12,17 @@ Parameters:
   BucketName:
     Type: String
     Default: dakobed-sqs-transform-bucket
-
   UserUploadTableName:
     Type: String
     Default: UserUploadTable
+  DynamoEndpoint:
+    Type: String
+    Default: cloud
+    AllowedValues:
+      - http://dynamo-local:8000
+      - cloud
+    Description: http://dynamo-local:8000, cloud
+
 
 Resources:
   UploadApi:
@@ -150,12 +157,13 @@ Resources:
 #        - SQSSendMessagePolicy:
 #            QueueName: InitiateTransformsQueue
 #        - AWSLambdaBasicExecutionRole
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserUploadTableName
+#        - DynamoDBCrudPolicy:
+#            TableName: !Ref UserUploadTableName
       CodeUri: handlers/verify_upload
       Handler: app.lambda_handler
       Environment:
         Variables:
+          dynamo_endpoint: !Ref DynamoEndpoint
           user_upload_table: !Ref UserUploadTableName
 
       Runtime: python3.7
@@ -184,6 +192,14 @@ Resources:
           Action:
           - sts:AssumeRole
       Policies:
+        - PolicyName: dynamo_user_table_policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:PutItem
+              Resource: !GetAtt UserUploadTable.Arn
         - PolicyName: allowLogging
           PolicyDocument:
             Version: '2012-10-17'
@@ -201,8 +217,6 @@ Resources:
               - s3:GetObject
               - s3:DeleteObject
               Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
-
-
 
 Outputs:
   UploadApi:
