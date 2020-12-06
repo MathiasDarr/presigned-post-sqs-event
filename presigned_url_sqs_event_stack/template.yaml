@@ -108,3 +108,17 @@ Resources:
                 aws:SourceArn: !Sub 'arn:aws:s3:::${BucketName}'
       Queues:
         - !Ref TransformQueue
+
+
+Outputs:
+  UploadApi:
+    Description: "API Gateway endpoint URL for Prod stage upload API"
+    Value: !Sub "https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/signedURL"
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UploadApi' ] ]
+
+  S3UploadBucket:
+    Description: "API Gateway endpoint URL for Prod stage upload API"
+    Value: !Ref BucketName
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'S3UploadBucket' ] ]
