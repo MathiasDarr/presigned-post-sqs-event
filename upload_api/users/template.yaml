@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  UserUploadTableName:
+    Type: String
+    Default: UploadTransformTable
+
+  DynamoEndpoint:
+    Type: String
+    Default: cloud
+    AllowedValues:
+      - http://dynamo-local:8000
+      - cloud
+    Description: http://dynamo-local:8000, cloud
+
+
+Resources:
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref UserUploadTableName
+      AttributeDefinitions:
+        -
+          AttributeName: "email"
+          AttributeType: "S"
+        -
+          AttributeName: "username"
+          AttributeType: "S"
+
+      KeySchema:
+        -
+          AttributeName: "email"
+          KeyType: "HASH"
+        -
+          AttributeName: "username"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "1"
+        WriteCapacityUnits: "1"
+

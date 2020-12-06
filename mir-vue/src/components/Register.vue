@@ -27,11 +27,11 @@ export default {
   },
   data() {
       return {
-            firstname: '',
-            lastname: '',
-            email: '',
-            password: '',
-            verify:'',
+            firstname: 'Mathias',
+            lastname: 'Darr',
+            email: 'dakobedbard@gmail.com',
+            password: '1!ZionTF',
+            verify:'1!ZionTF',
             error: null,
             valid: true,
             emailRules: [

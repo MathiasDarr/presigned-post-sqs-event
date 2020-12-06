@@ -8,21 +8,19 @@ if dynamo_endpoint == 'cloud':
 else:
     dynamo_resource = boto3.resource('dynamodb', endpoint_url=dynamo_endpoint)
 
-TABLE_NAME = os.getenv('user_upload_table')
+TABLE_NAME = os.getenv('user_table')
 
 table = dynamo_resource.Table(TABLE_NAME)
 region = 'us-west-2'
 
 
-def insert_user_upload(upload):
+def insert_user(upload):
     return table.put_item(
         Item={
             'user': upload['user'],
-            'filename': upload['filename'],
-            'fileurl': upload['fileurl'],
+            'email': upload['filename'],
         }
     )
-
 
 def lambda_handler(event, context):
     """
@@ -33,16 +31,17 @@ def lambda_handler(event, context):
     :param context:
     :return:
     """
-    records = event['Records']
-    r1 = records[0]
-    s3_record = r1['s3']
-    bucket = s3_record['bucket']['name']
-    key = s3_record['object']['key']
-
-    username = key.split('/')[0]
-    filename = key.split('/')[-1]
-    object_url = 'http://{}-{}.amazonaws.com/{}'.format(bucket, region, key)
-
-    upload = {'filename': filename, 'fileurl': object_url, 'user': username}
-    insert_user_upload(upload)
+    print(event)
+    # records = event['Records']
+    # r1 = records[0]
+    # s3_record = r1['s3']
+    # bucket = s3_record['bucket']['name']
+    # key = s3_record['object']['key']
+    #
+    # username = key.split('/')[0]
+    # filename = key.split('/')[-1]
+    # object_url = 'http://{}-{}.amazonaws.com/{}'.format(bucket, region, key)
+    #
+    # upload = {'filename': filename, 'fileurl': object_url, 'user': username}
+    # insert_user(upload)
 

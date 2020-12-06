@@ -1,6 +1,6 @@
 export default {
     region: 'us-west-2',
     // IdentityPoolId: 'eu-west-1_vTElG57hw',
-    UserPoolId: 'us-west-2_O2YnhBwOx',
-    ClientId: 'p3oggs7aqllooj1kr1s53g1mh',
+    UserPoolId: 'us-west-2_hDAibP73K',
+    ClientId: '4j0melis094gp7i2p44ji5lmcm',
   }

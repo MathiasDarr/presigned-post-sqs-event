@@ -1,10 +1,38 @@
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Parameters:
   SESEmailAddress:
     Type: String
     Default: arn:aws:ses:us-west-2:710339184759:identity/neuralstyleglacier@gmail.com
+  UserTableName:
+    Type: String
+    Default: Users
+  DynamoEndpoint:
+    Type: String
+    Default: cloud
+    AllowedValues:
+    - http://dynamo-local:8000
+    - cloud
+    Description: http://dynamo-local:8000, cloud
 Resources:
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Ref: UserTableName
+      AttributeDefinitions:
+      - AttributeName: email
+        AttributeType: S
+      - AttributeName: username
+        AttributeType: S
+      KeySchema:
+      - AttributeName: email
+        KeyType: HASH
+      - AttributeName: username
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: '1'
+        WriteCapacityUnits: '1'
   SESRole:
     Type: AWS::IAM::Role
     Properties:
@@ -40,6 +68,11 @@ Resources:
       - email
       EmailConfiguration:
         EmailSendingAccount: COGNITO_DEFAULT
+      LambdaConfig:
+        PostConfirmation:
+          Fn::GetAtt:
+          - VerifyConfirmedUserFunction
+          - Arn
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
@@ -49,6 +82,36 @@ Resources:
         Ref: UserPool
       ExplicitAuthFlows:
       - ADMIN_NO_SRP_AUTH
+  VerifyConfirmedUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: VerifyConfirmedUserFunction
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UserTableName
+      CodeUri: s3://dakobed-serverless-apis/cc3cff6384e1202aca6e3e1651536360
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          dynamo_endpoint:
+            Ref: DynamoEndpoint
+          user_table:
+            Ref: UserTableName
+      Runtime: python3.7
+  UserPoolLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - VerifyConfirmedUserFunction
+    Properties:
+      Action: lambda:invokeFunction
+      Principal: cognito-idp.amazonaws.com
+      FunctionName: VerifyConfirmedUserFunction
+      SourceArn:
+        Fn::GetAtt:
+        - UserPool
+        - Arn
 Outputs:
   UserPool:
     Value:
@@ -77,3 +140,12 @@ Outputs:
           - UserPoolARN
     Value:
       Fn::GetAtt: UserPool.Arn
+  UserTableName:
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - UserTableName
+    Value:
+      Ref: UserTableName
