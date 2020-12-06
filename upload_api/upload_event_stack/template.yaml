@@ -2,8 +2,6 @@ AWSTemplateFormatVersion : "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Dakobed Rest API Service
 
-
-
 Parameters:
   Region:
     Type: String
@@ -34,6 +32,18 @@ Resources:
         LambdaConfigurations:
           - Event: s3:ObjectCreated:*
             Function: !GetAtt VerifyUploadFunction.Arn
+
+      CorsConfiguration:
+        CorsRules:
+        - AllowedHeaders:
+            - "*"
+          AllowedMethods:
+            - GET
+            - PUT
+            - HEAD
+            - POST
+          AllowedOrigins:
+            - "*"
 
   PresignedPostUploadFunction:
     Type: AWS::Serverless::Function
@@ -81,7 +91,21 @@ Resources:
       FunctionName: !Ref PresignedPostUploadFunction
       Principal: apigateway.amazonaws.com
 
-
+  VerifyUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: VerifyUploadFunction
+#      Policies:
+#        - SQSSendMessagePolicy:
+#            QueueName: InitiateTransformsQueue
+#        - AWSLambdaBasicExecutionRole
+#        - DynamoDBCrudPolicy:
+#            TableName: !Ref UserUploadTable
+      CodeUri: handlers/verify_upload
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Role: !GetAtt ProcessingLambdaExecutionRole.Arn
 
   ProcessingLambdaPermission:
     Type: AWS::Lambda::Permission
@@ -133,19 +157,18 @@ Resources:
 #      MemorySize: 512
 #      Timeout: 120
 
-  VerifyUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 10
-      FunctionName: VerifyUploadFunction
-#      Policies:
-#        - SQSSendMessagePolicy:
-#            QueueName: InitiateTransformsQueue
-#        - AWSLambdaBasicExecutionRole
-#        - DynamoDBCrudPolicy:
-#            TableName: !Ref UserUploadTable
-      CodeUri: handlers/verify_upload
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Role: !GetAtt ProcessingLambdaExecutionRole.Arn
 
+
+
+Outputs:
+  UploadApi:
+    Description: "API Gateway endpoint URL for Prod stage upload API"
+    Value: !Sub "https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/signedURL"
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UploadApi' ] ]
+
+  Bucket:
+    Description: "API Gateway endpoint URL for Prod stage upload API"
+    Value: !Ref BucketName
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Bucket' ] ]

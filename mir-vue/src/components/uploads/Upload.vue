@@ -37,7 +37,7 @@ export default {
                 
                 var name = this.file.name
                 console.log(name)
-                var url ='https://cr5nlv4c58.execute-api.us-west-2.amazonaws.com/Prod/signedURL'
+                var url ='https://p7qdv6fqql.execute-api.us-west-2.amazonaws.com/Prod/signedURL'
                 var body = {filename:name}
                 
                 const response = await axios.post(url, body, {

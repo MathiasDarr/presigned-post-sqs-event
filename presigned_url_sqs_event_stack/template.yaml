@@ -32,8 +32,8 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: InitiateTransformsQueue
         - AWSLambdaBasicExecutionRole
-        - DynamoDBCrudPolicy:
-            TableName: UserUploads
+#        - DynamoDBCrudPolicy:
+#            TableName: UserUploads
       CodeUri: handlers/signedURL
       Handler: app.lambda_handler
       Runtime: python3.7
@@ -67,42 +67,43 @@ Resources:
       Principal: apigateway.amazonaws.com
 
 
-  UserUploadTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: !Sub "${AWS::StackName}-UserUploads"
-        AttributeDefinitions:
-          -
-            AttributeName: "user"
-            AttributeType: "S"
-          -
-            AttributeName: "filename"
-            AttributeType: "S"
+#  UserUploadTable:
+#      Type: AWS::DynamoDB::Table
+#      Properties:
+#        TableName: !Join [ ':', [ !Ref 'AWS::StackName', 'UserUploads' ] ]
+#        AttributeDefinitions:
+#          -
+#            AttributeName: "user"
+#            AttributeType: "S"
+#          -
+#            AttributeName: "filename"
+#            AttributeType: "S"
+#
+#        KeySchema:
+#          -
+#            AttributeName: "user"
+#            KeyType: "HASH"
+#          -
+#            AttributeName: "filename"
+#            KeyType: "RANGE"
+#
+#        ProvisionedThroughput:
+#          ReadCapacityUnits: 1
+#          WriteCapacityUnits: 1
 
-        KeySchema:
-          -
-            AttributeName: "user"
-            KeyType: "HASH"
-          -
-            AttributeName: "filename"
-            KeyType: "RANGE"
 
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
 
   S3UploadBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref BucketName
       NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt VerifyUploadFunction.Arn
 #        QueueConfigurations:
 #          - Event: s3:ObjectCreated:Post
 #            Queue: !GetAtt TransformQueue.Arn
-        LambdaConfigurations:
-          - Event: s3:ObjectCreated:Post
-            Function: !GetAtt VerifyUploadFunction.Arn
-
       CorsConfiguration:
         CorsRules:
         - AllowedHeaders:
@@ -114,75 +115,6 @@ Resources:
             - POST
           AllowedOrigins:
             - "*"
-            -
-  VerifyUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 10
-      FunctionName: VerifyUploadFunction
-      Policies:
-        - SQSSendMessagePolicy:
-            QueueName: InitiateTransformsQueue
-        - AWSLambdaBasicExecutionRole
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserUploadTable
-      CodeUri: handlers/verify_upload
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Role: !GetAtt LambdaIAMRole.Arn
-      Layers:
-        - !ImportValue upload-authorization-layer-stack:AuthorizationLayer
-
-      Environment:
-        Variables:
-          userpool_id: !ImportValue upload-api-userpool-stack:UserPool
-          app_client_id: !ImportValue upload-api-userpool-stack:UserPoolClient
-          region: !Ref Region
-          user_upload_table: !Ref UserUploadTable
-
-#      Events:
-#        UploadApi:
-#          Type: Api
-#          Properties:
-#            RestApiId: !Ref UploadApi
-#            Path: /uploads/verify
-#            Method: POST
-
-
-
-  LambdaIAMRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Path: /
-      Policies:
-        - PolicyName: root
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 's3:GetBucketNotification'
-                  - 's3:PutBucketNotification'
-                  - 's3:PostBucketNotification'
-                Resource: !Sub 'arn:aws:s3:::${BucketName}'
-              - Effect: Allow
-                Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                Resource: 'arn:aws:logs:*:*:*'
-
-
-
 
   TransformQueue:
     Type: AWS::SQS::Queue
@@ -207,6 +139,69 @@ Resources:
       Queues:
         - !Ref TransformQueue
 
+
+
+
+  VerifyUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: VerifyUploadFunction
+#      Policies:
+#        - SQSSendMessagePolicy:
+#            QueueName: InitiateTransformsQueue
+#        - AWSLambdaBasicExecutionRole
+#        - DynamoDBCrudPolicy:
+#            TableName: !Ref UserUploadTable
+      CodeUri: handlers/verify_upload
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Role: !GetAtt ProcessingLambdaExecutionRole.Arn
+
+  ProcessingLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref VerifyUploadFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub 'arn:aws:s3:::${BucketName}'
+      SourceAccount: !Ref AWS::AccountId
+
+
+  ProcessingLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: allowLogging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: arn:aws:logs:*:*:*
+        - PolicyName: getAndDeleteObjects
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:DeleteObject
+              Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
+
+
+
+
 Outputs:
   UploadApi:
     Description: "API Gateway endpoint URL for Prod stage upload API"
@@ -220,8 +215,8 @@ Outputs:
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'S3UploadBucket' ] ]
 
-  UserUploadTable:
-    Description: "API Gateway endpoint URL for Prod stage upload API"
-    Value: !Ref UserUploadTable
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UserUploadTable' ] ]
+#  UserUploadTable:
+#    Description: "API Gateway endpoint URL for Prod stage upload API"
+#    Value: !Ref BucketName
+#    Export:
+#      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UserUploadTable' ] ]

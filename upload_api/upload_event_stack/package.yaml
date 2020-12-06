@@ -32,6 +32,17 @@ Resources:
             Fn::GetAtt:
             - VerifyUploadFunction
             - Arn
+      CorsConfiguration:
+        CorsRules:
+        - AllowedHeaders:
+          - '*'
+          AllowedMethods:
+          - GET
+          - PUT
+          - HEAD
+          - POST
+          AllowedOrigins:
+          - '*'
   PresignedPostUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -133,3 +144,24 @@ Resources:
         Fn::GetAtt:
         - ProcessingLambdaExecutionRole
         - Arn
+Outputs:
+  UploadApi:
+    Description: API Gateway endpoint URL for Prod stage upload API
+    Value:
+      Fn::Sub: https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/signedURL
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - UploadApi
+  Bucket:
+    Description: API Gateway endpoint URL for Prod stage upload API
+    Value:
+      Ref: BucketName
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - Bucket

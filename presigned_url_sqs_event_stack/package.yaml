@@ -30,8 +30,6 @@ Resources:
       - SQSSendMessagePolicy:
           QueueName: InitiateTransformsQueue
       - AWSLambdaBasicExecutionRole
-      - DynamoDBCrudPolicy:
-          TableName: UserUploads
       CodeUri: s3://dakobed-serverless-apis/d8d6d02585aae7801b0a445900a5af24
       Handler: app.lambda_handler
       Runtime: python3.7
@@ -65,24 +63,6 @@ Resources:
       FunctionName:
         Ref: PresignedPostUploadFunction
       Principal: apigateway.amazonaws.com
-  UserUploadTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName:
-        Fn::Sub: ${AWS::StackName}-UserUploads
-      AttributeDefinitions:
-      - AttributeName: user
-        AttributeType: S
-      - AttributeName: filename
-        AttributeType: S
-      KeySchema:
-      - AttributeName: user
-        KeyType: HASH
-      - AttributeName: filename
-        KeyType: RANGE
-      ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
   S3UploadBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -90,7 +70,7 @@ Resources:
         Ref: BucketName
       NotificationConfiguration:
         LambdaConfigurations:
-        - Event: s3:ObjectCreated:Post
+        - Event: s3:ObjectCreated:*
           Function:
             Fn::GetAtt:
             - VerifyUploadFunction
@@ -106,69 +86,6 @@ Resources:
           - POST
           AllowedOrigins:
           - '*'
-  VerifyUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 10
-      FunctionName: VerifyUploadFunction
-      Policies:
-      - SQSSendMessagePolicy:
-          QueueName: InitiateTransformsQueue
-      - AWSLambdaBasicExecutionRole
-      - DynamoDBCrudPolicy:
-          TableName:
-            Ref: UserUploadTable
-      CodeUri: s3://dakobed-serverless-apis/1a6321abe9aa811ebfd55e4208c8e791
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Role:
-        Fn::GetAtt:
-        - LambdaIAMRole
-        - Arn
-      Layers:
-      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
-      Environment:
-        Variables:
-          userpool_id:
-            Fn::ImportValue: upload-api-userpool-stack:UserPool
-          app_client_id:
-            Fn::ImportValue: upload-api-userpool-stack:UserPoolClient
-          region:
-            Ref: Region
-          user_upload_table:
-            Ref: UserUploadTable
-  LambdaIAMRole:
-    Type: AWS::IAM::Role
-    DependsOn: S3UploadBucket
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: /
-      Policies:
-      - PolicyName: root
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Action:
-            - s3:GetBucketNotification
-            - s3:PutBucketNotification
-            - s3:PostBucketNotification
-            Resource:
-              Fn::Sub: arn:aws:s3:::${BucketName}
-          - Effect: Allow
-            Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            Resource: arn:aws:logs:*:*:*
   TransformQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -192,6 +109,60 @@ Resources:
                 Fn::Sub: arn:aws:s3:::${BucketName}
       Queues:
       - Ref: TransformQueue
+  VerifyUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: VerifyUploadFunction
+      CodeUri: s3://dakobed-serverless-apis/1a6321abe9aa811ebfd55e4208c8e791
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Role:
+        Fn::GetAtt:
+        - ProcessingLambdaExecutionRole
+        - Arn
+  ProcessingLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: VerifyUploadFunction
+      Principal: s3.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:s3:::${BucketName}
+      SourceAccount:
+        Ref: AWS::AccountId
+  ProcessingLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: allowLogging
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+      - PolicyName: getAndDeleteObjects
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:DeleteObject
+            Resource:
+              Fn::Sub: arn:aws:s3:::${BucketName}/*
 Outputs:
   UploadApi:
     Description: API Gateway endpoint URL for Prod stage upload API
@@ -213,13 +184,3 @@ Outputs:
         - ':'
         - - Ref: AWS::StackName
           - S3UploadBucket
-  UserUploadTable:
-    Description: API Gateway endpoint URL for Prod stage upload API
-    Value:
-      Ref: UserUploadTable
-    Export:
-      Name:
-        Fn::Join:
-        - ':'
-        - - Ref: AWS::StackName
-          - UserUploadTable
