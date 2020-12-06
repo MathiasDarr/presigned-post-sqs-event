@@ -65,6 +65,57 @@ Resources:
       FunctionName:
         Ref: PresignedPostUploadFunction
       Principal: apigateway.amazonaws.com
+  VerifyUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: VerifyUploadFunction
+      Policies:
+      - SQSSendMessagePolicy:
+          QueueName: InitiateTransformsQueue
+      - AWSLambdaBasicExecutionRole
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UserUploadTable
+      CodeUri: s3://dakobed-serverless-apis/d8d6d02585aae7801b0a445900a5af24
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Layers:
+      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
+      Environment:
+        Variables:
+          userpool_id:
+            Fn::ImportValue: upload-api-userpool-stack:UserPool
+          app_client_id:
+            Fn::ImportValue: upload-api-userpool-stack:UserPoolClient
+          region:
+            Ref: Region
+      Events:
+        UploadApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: UploadApi
+            Path: /signedURL
+            Method: POST
+  UserUploadTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: ${AWS::StackName}-UserUploads
+      AttributeDefinitions:
+      - AttributeName: user
+        AttributeType: S
+      - AttributeName: filename
+        AttributeType: S
+      KeySchema:
+      - AttributeName: user
+        KeyType: HASH
+      - AttributeName: filename
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
   S3UploadBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -132,3 +183,13 @@ Outputs:
         - ':'
         - - Ref: AWS::StackName
           - S3UploadBucket
+  UserUploadTable:
+    Description: API Gateway endpoint URL for Prod stage upload API
+    Value:
+      Ref: UserUploadTable
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - UserUploadTable
