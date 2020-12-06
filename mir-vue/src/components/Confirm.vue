@@ -18,7 +18,7 @@ export default {
     name: 'Confirm',
     data () {
         return {
-            email: '',
+            email: 'dakobedbard@gmail.com',
             confirmcode: '',
             error: null
         }

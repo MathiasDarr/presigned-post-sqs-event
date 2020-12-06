@@ -32,6 +32,7 @@ def lambda_handler(event, context):
     :return:
     """
     print(event)
+    return event
     # records = event['Records']
     # r1 = records[0]
     # s3_record = r1['s3']
