@@ -11,6 +11,9 @@ Parameters:
   BucketName:
     Type: String
     Default: dakobed-sqs-transform-bucket
+  UserUploadTableName:
+    Type: String
+    Default: UserUploadTable
 Resources:
   UploadApi:
     Type: AWS::Serverless::Api
@@ -63,6 +66,24 @@ Resources:
       FunctionName:
         Ref: PresignedPostUploadFunction
       Principal: apigateway.amazonaws.com
+  UserUploadTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Ref: UserUploadTableName
+      AttributeDefinitions:
+      - AttributeName: user
+        AttributeType: S
+      - AttributeName: filename
+        AttributeType: S
+      KeySchema:
+      - AttributeName: user
+        KeyType: HASH
+      - AttributeName: filename
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
   S3UploadBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -114,8 +135,16 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/1a6321abe9aa811ebfd55e4208c8e791
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UserUploadTableName
+      CodeUri: s3://dakobed-serverless-apis/2c97aa668440a8b0c622623ab83093c0
       Handler: app.lambda_handler
+      Environment:
+        Variables:
+          user_upload_table:
+            Ref: UserUploadTableName
       Runtime: python3.7
       Role:
         Fn::GetAtt:

@@ -13,6 +13,10 @@ Parameters:
     Type: String
     Default: dakobed-sqs-transform-bucket
 
+  UserUploadTableName:
+    Type: String
+    Default: UserUploadTable
+
 Resources:
   UploadApi:
     Type: AWS::Serverless::Api
@@ -67,31 +71,29 @@ Resources:
       Principal: apigateway.amazonaws.com
 
 
-#  UserUploadTable:
-#      Type: AWS::DynamoDB::Table
-#      Properties:
-#        TableName: !Join [ ':', [ !Ref 'AWS::StackName', 'UserUploads' ] ]
-#        AttributeDefinitions:
-#          -
-#            AttributeName: "user"
-#            AttributeType: "S"
-#          -
-#            AttributeName: "filename"
-#            AttributeType: "S"
-#
-#        KeySchema:
-#          -
-#            AttributeName: "user"
-#            KeyType: "HASH"
-#          -
-#            AttributeName: "filename"
-#            KeyType: "RANGE"
-#
-#        ProvisionedThroughput:
-#          ReadCapacityUnits: 1
-#          WriteCapacityUnits: 1
+  UserUploadTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: !Ref UserUploadTableName
+        AttributeDefinitions:
+          -
+            AttributeName: "user"
+            AttributeType: "S"
+          -
+            AttributeName: "filename"
+            AttributeType: "S"
 
+        KeySchema:
+          -
+            AttributeName: "user"
+            KeyType: "HASH"
+          -
+            AttributeName: "filename"
+            KeyType: "RANGE"
 
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 
   S3UploadBucket:
     Type: AWS::S3::Bucket
@@ -139,22 +141,23 @@ Resources:
       Queues:
         - !Ref TransformQueue
 
-
-
-
   VerifyUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-#      Policies:
+      Policies:
 #        - SQSSendMessagePolicy:
 #            QueueName: InitiateTransformsQueue
 #        - AWSLambdaBasicExecutionRole
-#        - DynamoDBCrudPolicy:
-#            TableName: !Ref UserUploadTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserUploadTableName
       CodeUri: handlers/verify_upload
       Handler: app.lambda_handler
+      Environment:
+        Variables:
+          user_upload_table: !Ref UserUploadTableName
+
       Runtime: python3.7
       Role: !GetAtt ProcessingLambdaExecutionRole.Arn
 
@@ -198,7 +201,6 @@ Resources:
               - s3:GetObject
               - s3:DeleteObject
               Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
-
 
 
 
