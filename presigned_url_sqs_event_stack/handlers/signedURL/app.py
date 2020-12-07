@@ -8,9 +8,7 @@ from jose import jwk, jwt
 from jose.utils import base64url_decode
 import json
 
-
 BUCKET = os.getenv('UploadBucket')
-
 
 dynamo_endpoint = os.getenv('dynamo_endpoint')
 if dynamo_endpoint == 'cloud':
@@ -19,12 +17,15 @@ else:
     dynamo_resource = boto3.resource('dynamodb', endpoint_url=dynamo_endpoint)
 
 USER_TABLE_NAME = os.getenv('user_table')
-user_table = dynamo_resource.Table(USER_TABLE_NAME)
-
+user_table = dynamo_resource.Table('Users')
 
 region = os.getenv('region')
 userpool_id = os.getenv('userpool_id')
 app_client_id = os.getenv('app_client_id')
+
+print("APP CLIENT ID")
+print(app_client_id)
+
 keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(region, userpool_id)
 
 with urllib.request.urlopen(keys_url) as f:
@@ -104,24 +105,26 @@ def get_user_upload_directory(user_email):
             'email': user_email,
         }
     )
+    return response['Item']['upload_directory']
 
 
 def lambda_handler(event, context):
-    if 'Authorization' not in event['headers'] or not verify_identification_token(event['headers']['Authorization']):
+    # print("header")
+    # print((event['params']['header']['Authorization'])
+    if 'Authorization' not in event['params']['header'] or not verify_identification_token(
+            event['params']['header']['Authorization']):
         return {"statusCode": 403, "body": json.dumps({
             "error": "Token has expired or been issued to different user."
         }), 'headers': {"Access-Control-Allow-Origin": "*"}}
 
-    userID = verify_identification_token(event['headers']['Authorization'])
+    userID = verify_identification_token(event['params']['header']['Authorization'])
 
     user_upload_directory = get_user_upload_directory(userID)
-
-    body = json.loads(event['body'])
-    filename = body['filename']
-
+    filename = event['body']['filename']
     presigned = create_presigned_post(BUCKET, '{}/{}'.format(user_upload_directory, filename))
 
     presigned['fields']['bucket'] = BUCKET
+
     response = {"statusCode": 200, "body": json.dumps({
         "presigned": presigned
     }), 'headers': {"Access-Control-Allow-Origin": "*"}}

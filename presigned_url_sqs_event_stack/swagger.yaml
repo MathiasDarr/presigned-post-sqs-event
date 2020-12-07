@@ -55,15 +55,15 @@ paths:
         basic:
           validateRequestParameters: true
       x-amazon-apigateway-integration:
-        type: "aws_proxy"
+        type: "aws"
         httpMethod: "POST"
         # Replace AWS_REGION and ACCOUNT_ID in uri
         uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:710339184759:function:PresignedPostUploadFunction/invocations"
-#        responses:
-#          default:
-#            statusCode: 200
-#            responseParameters:
-#              method.response.header.Access-Control-Allow-Origin: "'*'"
-#        passthroughBehavior: "when_no_templates"
-#        requestTemplates:
-#          application/json: "{\r\n   \"body\" : \"$input.body\",\r\n  \"headers\": {\r\n  #foreach($param in $input.params().header.keySet())\r\n   }  \r\n}"
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        passthroughBehavior: "when_no_templates"
+        requestTemplates:
+          application/json: " #set($allParams = $input.params()) { \"body\" : $input.json('$'), \"params\" : { #foreach($type in $allParams.keySet()) #set($params = $allParams.get($type)) \"$type\" : { #foreach($paramName in $params.keySet()) \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" #if($foreach.hasNext),#end #end } #if($foreach.hasNext),#end #end }}"

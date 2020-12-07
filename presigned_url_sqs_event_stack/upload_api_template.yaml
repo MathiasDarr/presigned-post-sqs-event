@@ -44,7 +44,7 @@ Resources:
             QueueName: InitiateTransformsQueue
         - AWSLambdaBasicExecutionRole
         - DynamoDBReadPolicy:
-            TableName: !Ref UserUploadTableName
+            TableName: Users
       CodeUri: handlers/signedURL
       Handler: app.lambda_handler
       Runtime: python3.7
@@ -58,7 +58,7 @@ Resources:
           userpool_id: !ImportValue upload-user-stack:UserPool
           app_client_id: !ImportValue upload-user-stack:UserPoolClient
           region: !Ref Region
-          user_table: upload-user-stack:UserTableName
+          user_table: Users
 
 
       Events:

@@ -27,7 +27,7 @@ Resources:
     Properties:
       Name: UploadApi
       StageName: Prod
-      DefinitionUri: s3://dakobed-serverless-apis/1dae8c2e1b633149a48a8b56eae567fe
+      DefinitionUri: s3://dakobed-serverless-apis/65678f60225e904dcd415d4ed770fefa
   PresignedPostUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -41,9 +41,8 @@ Resources:
           QueueName: InitiateTransformsQueue
       - AWSLambdaBasicExecutionRole
       - DynamoDBReadPolicy:
-          TableName:
-            Ref: UserUploadTableName
-      CodeUri: s3://dakobed-serverless-apis/e712303f87e0e0ae1ff94fba523df034
+          TableName: Users
+      CodeUri: s3://dakobed-serverless-apis/05362ad0392c5ef9ba08353da868dddc
       Handler: app.lambda_handler
       Runtime: python3.7
       Layers:
@@ -58,7 +57,7 @@ Resources:
             Fn::ImportValue: upload-user-stack:UserPoolClient
           region:
             Ref: Region
-          user_table: upload-user-stack:UserTableName
+          user_table: Users
       Events:
         UploadApi:
           Type: Api
@@ -239,3 +238,13 @@ Outputs:
         - ':'
         - - Ref: AWS::StackName
           - S3UploadBucket
+  UserUploadTable:
+    Description: API Gateway endpoint URL for Prod stage upload API
+    Value:
+      Ref: BucketName
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - UserUploadTable
