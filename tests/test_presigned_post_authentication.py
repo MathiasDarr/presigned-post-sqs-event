@@ -8,7 +8,7 @@ import requests
 
 cf_client = boto3.client('cloudformation')
 
-userpool_stack = 'upload-api-userpool-stack'
+userpool_stack = 'upload-user-stack'
 response = cf_client.describe_stacks(StackName=userpool_stack)
 outputs = response["Stacks"][0]["Outputs"]
 
@@ -59,30 +59,48 @@ def verify_object_exists(client, bucket, key):
         pass
     return found
 
+fileName = 'jazz3_solo.wav'
+user = 'dakobedbard'
+userID = "dakobedbard@gmail.com"
+
+key = '{}/{}'.format(user, fileName)
+
+s3 = boto3.resource('s3')
+s3.Object(S3__UPLOAD_BUCKET, key).delete()
+
+s3_client = boto3.client('s3')
+
+body = {"filename": fileName, "userID": userID}
+
+lambda_presigned_post = requests.post(GATEWAY_PROD_URL, json=body)
+
+
+
 
 def test_unauthenticated_upload_file():
     """
     Verify that requests without the Authorization header will return 403
     :return:
     """
-    fileName = 'jazz3_solo.wav'
-    user = 'dakobedbard'
-    userID = "dakobedbard@gmail.com"
+    # fileName = 'jazz3_solo.wav'
+    # user = 'dakobedbard'
+    # userID = "dakobedbard@gmail.com"
+    #
+    # key = '{}/{}'.format(user, fileName)
+    #
+    # s3 = boto3.resource('s3')
+    # s3.Object(S3__UPLOAD_BUCKET, key).delete()
+    #
+    # s3_client = boto3.client('s3')
+    # assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
+    #
+    # body = {"filename": fileName, "userID": userID}
+    #
+    # lambda_presigned_post = requests.post(GATEWAY_PROD_URL, json=body)
+    # assert lambda_presigned_post.status_code == 403
+    # assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
-    key = '{}/{}'.format(user, fileName)
-
-    s3 = boto3.resource('s3')
-    s3.Object(S3__UPLOAD_BUCKET, key).delete()
-
-    s3_client = boto3.client('s3')
-    assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
-
-    body = {"filename": fileName, "userID": userID}
-
-    lambda_presigned_post = requests.post(GATEWAY_PROD_URL, json=body)
-    assert lambda_presigned_post.status_code == 403
-    assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
-
+test_unauthenticated_upload_file()
 
 def test_authenticated_upload_file():
     """

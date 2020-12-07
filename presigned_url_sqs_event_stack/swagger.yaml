@@ -50,6 +50,14 @@ paths:
           headers:
             Access-Control-Allow-Origin:
               type: string
+#        403:
+#          description: "Failure"
+#          schema:
+#            $ref: "#/definitions/Empty"
+#          headers:
+#            Access-Control-Allow-Origin:
+#              type: string
+
       # For AWS Integration
       x-amazon-apigateway-request-validators:
         basic:
@@ -59,11 +67,15 @@ paths:
         httpMethod: "POST"
         # Replace AWS_REGION and ACCOUNT_ID in uri
         uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:710339184759:function:PresignedPostUploadFunction/invocations"
+
         responses:
           default:
             statusCode: 200
             responseParameters:
               method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')) #if($inputRoot.toString().contains(\"error\")) #set($context.responseOverride.status = 403) \"error\": \"$inputRoot.body\" #end"
+
         passthroughBehavior: "when_no_templates"
         requestTemplates:
           application/json: " #set($allParams = $input.params()) { \"body\" : $input.json('$'), \"params\" : { #foreach($type in $allParams.keySet()) #set($params = $allParams.get($type)) \"$type\" : { #foreach($paramName in $params.keySet()) \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\" #if($foreach.hasNext),#end #end } #if($foreach.hasNext),#end #end }}"

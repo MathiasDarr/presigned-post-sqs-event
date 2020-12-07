@@ -114,8 +114,8 @@ def lambda_handler(event, context):
     if 'Authorization' not in event['params']['header'] or not verify_identification_token(
             event['params']['header']['Authorization']):
         return {"statusCode": 403, "body": json.dumps({
-            "error": "Token has expired or been issued to different user."
-        }), 'headers': {"Access-Control-Allow-Origin": "*"}}
+            "errorMessage": "failure"
+        }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type":"application/json"}}
 
     userID = verify_identification_token(event['params']['header']['Authorization'])
 
@@ -127,6 +127,15 @@ def lambda_handler(event, context):
 
     response = {"statusCode": 200, "body": json.dumps({
         "presigned": presigned
-    }), 'headers': {"Access-Control-Allow-Origin": "*"}}
+    }), 'headers': {"Access-Control-Allow-Origin": "*"}, "Content-Type":"application/json"}
 
     return response
+
+
+# #set($inputRoot = $input.path('$.errorMessage'))
+# $inputRoot
+#
+#
+# #set($inputRoot = $input.path('$')) {
+#     "error": "$inputRoot.errorMessage"
+# }
