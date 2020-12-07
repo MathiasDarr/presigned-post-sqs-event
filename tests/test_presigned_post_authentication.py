@@ -126,18 +126,16 @@ def test_authenticated_upload_small_file():
     assert http_response.status_code == 204
     assert verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
-test_authenticated_upload_small_file()
 
 def test_authenticated_upload_large_file():
     """
     Test that authenticated user is able to upload to s3 with presigned post
     :return: requests.response
     """
-
-    fileName = 'jazz3_solo.wav'
+    # fileName = 'jazz3_solo.wav'
+    fileName = 'eb_comp.wav'
     user = 'dakobedbard_gmail'
     userID = "dakobedbard@gmail.com"
-
     password = '1!ZionTF'
 
     id_token = authenticate_user(userID, password)
@@ -170,104 +168,3 @@ def test_authenticated_upload_large_file():
     assert verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
 test_authenticated_upload_large_file()
-
-    # fileName = 'jazz3_solo.wav'
-    # user = 'dakobedbard'
-    # userID = "dakobedbard@gmail.com"
-    #
-    # password = '1!ZionTF'
-    #
-    # id_token = authenticate_user(userID, password)
-    #
-    # key = '{}/{}'.format(user, fileName)
-    #
-    # s3 = boto3.resource('s3')
-    # s3.Object(S3__UPLOAD_BUCKET, key).delete()
-    #
-    # s3_client = boto3.client('s3')
-    # assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
-    #
-    # body = {"filename": fileName, "userID": userID}
-    #
-    # headers = {'Authorization': id_token}
-    #
-    # lambda_presigned_post = requests.post(GATEWAY_PROD_URL, json=body, headers=headers)
-    # assert lambda_presigned_post.status_code == 200
-    #
-    # response_body = json.loads(lambda_presigned_post.json()['body'])  # ['presigned']
-    # presigned = response_body['presigned']
-    # fields = presigned['fields']
-    # response = {'url': presigned['url'], 'fields': fields}
-    #
-    # with open(fileName, 'rb') as f:
-    #     files = {'file': (fileName, f)}
-    #     http_response = requests.post(response['url'], data=response['fields'], files=files)
-    #
-
-
-
-# fileName = 'jazz3_solo.wav'
-
-
-
-
-
-
-
-
-
-
-# fileName = 'jazz3_solo.wav'
-# user = 'dakobedbard'
-# userID = "dakobedbard@gmail.com"
-#
-# password = '1!ZionTF'
-#
-# id_token = authenticate_user(userID, password)
-#
-# key = '{}/{}'.format(user, fileName)
-#
-# s3 = boto3.resource('s3')
-# s3.Object(S3__UPLOAD_BUCKET, key).delete()
-#
-# s3_client = boto3.client('s3')
-# # assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
-#
-# body = {"filename": fileName, "userID": userID}
-#
-# headers = {'Authorization': id_token}
-#
-# lambda_presigned_post = requests.post(GATEWAY_PROD_URL, json=body, headers=headers)
-# # assert lambda_presigned_post.status_code == 200
-#
-# response_body = json.loads(lambda_presigned_post.json()['body']) #['presigned']
-# presigned = response_body['presigned']
-# fields = presigned['fields']
-# response = {'url': presigned['url'], 'fields': fields}
-#
-# fileName = 'jazz3_solo.wav'
-# user = 'dakobedbard'
-# userID = "dakobedbard@gmail.com"
-#
-# password = '1!ZionTF'
-#
-# id_token = authenticate_user(userID, password)
-#
-# key = '{}/{}'.format(user, fileName)
-#
-# s3 = boto3.resource('s3')
-# s3.Object(S3__UPLOAD_BUCKET, key).delete()
-#
-# s3_client = boto3.client('s3')
-# assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
-#
-# body = {"filename": fileName, "userID": userID}
-#
-# headers = {'Authorization': id_token}
-#
-# lambda_presigned_post = requests.post(GATEWAY_PROD_URL, json=body, headers=headers)
-# assert lambda_presigned_post.status_code == 200
-#
-# response_body = lambda_presigned_post.json()['presigned']
-# fields = response_body['fields']
-# response = {'url': response_body['url'], 'fields': fields}

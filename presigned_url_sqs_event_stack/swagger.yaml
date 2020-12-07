@@ -74,7 +74,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Origin: "'*'"
             responseTemplates:
-              application/json: "#set($inputRoot = $input.path('$')) #if($inputRoot.toString().contains(\"error\")) #set($context.responseOverride.status = 403) \"error\": \"$inputRoot.body\" #end"
+              application/json: "#set($inputRoot = $input.path('$')) #if($inputRoot.toString().contains(\"error\")) #set($context.responseOverride.status = 408)  \"error\": \"$inputRoot.body\" #end $input.json(\"$\")"
 
         passthroughBehavior: "when_no_templates"
         requestTemplates:

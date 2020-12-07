@@ -46,27 +46,30 @@ export default {
                     }
                   })
                 
-                
-                // var data = JSON.parse(response.data)
-                // console.log(response.data)
                 var data = response.data
                 var object_url = data['body']
-                // console.log(object_url)
+
                 var parsed_data = JSON.parse(object_url)
-                // console.log(parsed_data['presigned']['url'])
-// var data = JSON.parse(response.data.data)
-                // var presigned = data.presigned
-                // var object_url = data['url']
-                // var key = data['fields']['key']
-                // console.log(object_url+key)
                 var fields = parsed_data['presigned']['fields']
+                
                 let form = new FormData()
                 Object.keys(fields).forEach(key=>form.append(key, fields[key]))
                 form.append('file', this.file)
                 var post_url = parsed_data['presigned']['url']
                 console.log(post_url)
-                console.log(fields)
-                await fetch(parsed_data['presigned']['url'], {method:'POST', body: form})
+                // console.log(fields)
+                var options_headers = { "Access-Control-Request-Method" : "POST"}
+              
+                let config = {
+                  headers: {
+                    "Access-Control-Request-Method" : "POST"
+                  }
+                }
+                var d = {}
+
+                await axios.options(post_url, d , config)
+
+              //  await fetch(parsed_data['presigned']['url'], {method:'POST', body: form})
   
 
             }catch(err){
