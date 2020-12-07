@@ -10,10 +10,10 @@ else:
     dynamo_resource = boto3.resource('dynamodb', endpoint_url=dynamo_endpoint)
 
 UPLOAD_TABLE_NAME = os.getenv('user_upload_table')
-USER_TABLE_NAME = os.getenv('user_table')
-
+# USER_TABLE_NAME = os.getenv('user_table')
+# USER_TABLE_NAME ='Users'
 upload_table = dynamo_resource.Table(UPLOAD_TABLE_NAME)
-user_table = dynamo_resource.Table(USER_TABLE_NAME)
+user_table = dynamo_resource.Table('Users')
 
 region = 'us-west-2'
 
@@ -57,7 +57,6 @@ def lambda_handler(event, context):
     key = s3_record['object']['key']
 
     upload_directory = key.split('/')[0]
-
     userid = get_user_email_from_directory(upload_directory)
 
     filename = key.split('/')[-1]

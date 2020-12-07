@@ -145,11 +145,7 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      Policies:
-      - DynamoDBCrudPolicy:
-          TableName:
-            Ref: UserUploadTableName
-      CodeUri: s3://dakobed-serverless-apis/6822a1be1f649060665b949570460a37
+      CodeUri: s3://dakobed-serverless-apis/ce4191148477292844c1ce26d802831b
       Handler: app.lambda_handler
       Environment:
         Variables:
@@ -157,8 +153,7 @@ Resources:
             Ref: DynamoEndpoint
           user_upload_table:
             Ref: UserUploadTableName
-          user_table:
-            Fn::ImportValue: upload-user-stack:UserTableName
+          user_table: Uses
       Runtime: python3.7
       Role:
         Fn::GetAtt:
@@ -189,6 +184,14 @@ Resources:
           - sts:AssumeRole
       Policies:
       - PolicyName: dynamo_user_table_policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:Query
+            Resource: arn:aws:dynamodb:us-west-2:710339184759:table/Users/index/*
+      - PolicyName: dynamo_upload_table_policy
         PolicyDocument:
           Version: '2012-10-17'
           Statement:

@@ -155,19 +155,18 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      Policies:
+#      Policies:
 #        - SQSSendMessagePolicy:
 #            QueueName: InitiateTransformsQueue
 #        - AWSLambdaBasicExecutionRole
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserUploadTableName
+
       CodeUri: handlers/verify_upload
       Handler: app.lambda_handler
       Environment:
         Variables:
           dynamo_endpoint: !Ref DynamoEndpoint
           user_upload_table: !Ref UserUploadTableName
-          user_table: !ImportValue upload-user-stack:UserTableName
+          user_table: Uses
 
       Runtime: python3.7
       Role: !GetAtt ProcessingLambdaExecutionRole.Arn
@@ -201,8 +200,20 @@ Resources:
             Statement:
             - Effect: Allow
               Action:
-              - dynamodb:PutItem
-              Resource: !GetAtt UserUploadTable.Arn
+              - dynamodb:Query
+#              Resource: arn:aws:dynamodb:us-west-2:710339184759:table/Users
+              Resource: arn:aws:dynamodb:us-west-2:710339184759:table/Users/index/*
+
+        - PolicyName: dynamo_upload_table_policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: !GetAtt UserUploadTable.Arn
+
+
         - PolicyName: allowLogging
           PolicyDocument:
             Version: '2012-10-17'

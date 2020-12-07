@@ -157,3 +157,28 @@ Outputs:
           - UserTableName
     Value:
       Ref: UserTableName
+  UserTable:
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - UserTableArn
+    Value:
+      Fn::GetAtt:
+      - UserTable
+      - Arn
+  UserTableIndicesArn:
+    Export:
+      Name:
+        Fn::Join:
+        - ':'
+        - - Ref: AWS::StackName
+          - UserTableIndicesArn
+    Value:
+      Fn::Join:
+      - ''
+      - - Fn::GetAtt:
+          - UserTable
+          - Arn
+        - /index/*

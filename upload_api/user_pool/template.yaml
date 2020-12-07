@@ -151,3 +151,16 @@ Outputs:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UserTableName' ] ]
     Value:
       !Ref UserTableName
+
+  UserTable:
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UserTableArn' ] ]
+    Value:
+      !GetAtt UserTable.Arn
+
+  UserTableIndicesArn:
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UserTableIndicesArn' ] ]
+    Value:
+      !Join [ '', [ !GetAtt UserTable.Arn, '/index/*' ] ]
+
