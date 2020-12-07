@@ -28,14 +28,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "email"
           AttributeType: "S"
-        - AttributeName: "username"
-          AttributeType: "S"
 
       KeySchema:
         - AttributeName: "email"
           KeyType: "HASH"
-        - AttributeName: "username"
-          KeyType: "RANGE"
+
+
       ProvisionedThroughput:
         ReadCapacityUnits: "1"
         WriteCapacityUnits: "1"

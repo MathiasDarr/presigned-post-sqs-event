@@ -14,11 +14,11 @@ table = dynamo_resource.Table(TABLE_NAME)
 region = 'us-west-2'
 
 
-def insert_user(upload):
+def insert_user(user):
     return table.put_item(
         Item={
-            'user': upload['user'],
-            'email': upload['filename'],
+            'email': user['email'],
+            'upload_directory': user['upload_directory']
         }
     )
 
@@ -31,18 +31,11 @@ def lambda_handler(event, context):
     :param context:
     :return:
     """
-    print(event)
+    email = event['request']['userAttributes']['email']
+    prefix = email.split('@')[0]
+    suffix = email.split('@')[1].split('.')[0]
+    upload_directory = '{}_{}'.format(prefix, suffix)
+    user = {'email': email, 'upload_directory': upload_directory}
+    insert_user(user)
     return event
-    # records = event['Records']
-    # r1 = records[0]
-    # s3_record = r1['s3']
-    # bucket = s3_record['bucket']['name']
-    # key = s3_record['object']['key']
-    #
-    # username = key.split('/')[0]
-    # filename = key.split('/')[-1]
-    # object_url = 'http://{}-{}.amazonaws.com/{}'.format(bucket, region, key)
-    #
-    # upload = {'filename': filename, 'fileurl': object_url, 'user': username}
-    # insert_user(upload)
 

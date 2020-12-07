@@ -23,13 +23,9 @@ Resources:
       AttributeDefinitions:
       - AttributeName: email
         AttributeType: S
-      - AttributeName: username
-        AttributeType: S
       KeySchema:
       - AttributeName: email
         KeyType: HASH
-      - AttributeName: username
-        KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: '1'
         WriteCapacityUnits: '1'
@@ -91,7 +87,7 @@ Resources:
       - DynamoDBCrudPolicy:
           TableName:
             Ref: UserTableName
-      CodeUri: s3://dakobed-serverless-apis/cc3cff6384e1202aca6e3e1651536360
+      CodeUri: s3://dakobed-serverless-apis/492dcfe36101f58d2f603f7e3a7f1959
       Handler: app.lambda_handler
       Environment:
         Variables:
