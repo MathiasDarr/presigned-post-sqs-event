@@ -37,7 +37,7 @@ export default {
                 
                 var name = this.file.name
                 console.log(name)
-                var url ='https://cjreah16cf.execute-api.us-west-2.amazonaws.com/Prod/signedURL'
+                var url ='https://6xk6uqvvyf.execute-api.us-west-2.amazonaws.com/Prod/signedURL'
                 var body = {filename:name}
                 
                 const response = await axios.post(url, body, {
@@ -45,17 +45,28 @@ export default {
                       Authorization: this.getIdToken
                     }
                   })
-
-                var data = JSON.parse(response.data.body)
-                var presigned = data.presigned
+                
+                
+                // var data = JSON.parse(response.data)
+                // console.log(response.data)
+                var data = response.data
+                var object_url = data['body']
+                // console.log(object_url)
+                var parsed_data = JSON.parse(object_url)
+                // console.log(parsed_data['presigned']['url'])
+// var data = JSON.parse(response.data.data)
+                // var presigned = data.presigned
                 // var object_url = data['url']
                 // var key = data['fields']['key']
                 // console.log(object_url+key)
-
+                var fields = parsed_data['presigned']['fields']
                 let form = new FormData()
-                Object.keys(presigned.fields).forEach(key=>form.append(key, presigned.fields[key]))
+                Object.keys(fields).forEach(key=>form.append(key, fields[key]))
                 form.append('file', this.file)
-                await fetch(presigned.url, {method:'POST', body: form})
+                var post_url = parsed_data['presigned']['url']
+                console.log(post_url)
+                console.log(fields)
+                await fetch(parsed_data['presigned']['url'], {method:'POST', body: form})
   
 
             }catch(err){

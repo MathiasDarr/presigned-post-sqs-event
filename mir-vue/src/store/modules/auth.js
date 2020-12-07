@@ -29,14 +29,11 @@ const getters = {
 const actions = {
 
     async setJWT({commit}, tokens){
-        console.log("Token " + tokens.access)
-        console.log("id token " + tokens.id)
         commit('setAccessToken', tokens)
     },
 
 
     async setEmail({commit}, email){
-        console.log("The incoming emai lis " + email)
         commit('setEmail', email)
     },
 
@@ -62,7 +59,6 @@ const actions = {
         var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
         cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: function (result) {
-                console.log("ID TOKEN " +result.getIdToken().getJwtToken())
                 commit('setAccessToken', {access:result.getAccessToken().getJwtToken(),id: result.getIdToken().getJwtToken()})
             },
 
@@ -82,7 +78,6 @@ const actions = {
     
             var response_string = JSON.stringify(response.data)
             var data = JSON.parse(response_string)
-            console.log(data)
             commit('setGuitarSetData', data)
     
           }, (error) => {

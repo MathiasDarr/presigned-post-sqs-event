@@ -109,13 +109,11 @@ def get_user_upload_directory(user_email):
 
 
 def lambda_handler(event, context):
-    # print("header")
-    # print((event['params']['header']['Authorization'])
     if 'Authorization' not in event['params']['header'] or not verify_identification_token(
             event['params']['header']['Authorization']):
         return {"statusCode": 403, "body": json.dumps({
             "errorMessage": "failure"
-        }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type":"application/json"}}
+        }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
 
     userID = verify_identification_token(event['params']['header']['Authorization'])
 
@@ -127,9 +125,36 @@ def lambda_handler(event, context):
 
     response = {"statusCode": 200, "body": json.dumps({
         "presigned": presigned
-    }), 'headers': {"Access-Control-Allow-Origin": "*"}, "Content-Type":"application/json"}
-
+    }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
     return response
+
+    # response = {"statusCode": 200, "body": json.dumps({
+    #     "presigned": "hello"
+    # }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type":"application/json"}}
+    #
+    # return response
+
+    # # print("header")
+    # # print((event['params']['header']['Authorization'])
+    # if 'Authorization' not in event['params']['header'] or not verify_identification_token(
+    #         event['params']['header']['Authorization']):
+    #     return {"statusCode": 403, "body": json.dumps({
+    #         "errorMessage": "failure"
+    #     }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type":"application/json"}}
+    #
+    # userID = verify_identification_token(event['params']['header']['Authorization'])
+    #
+    # user_upload_directory = get_user_upload_directory(userID)
+    # filename = event['body']['filename']
+    # presigned = create_presigned_post(BUCKET, '{}/{}'.format(user_upload_directory, filename))
+    #
+    # presigned['fields']['bucket'] = BUCKET
+    #
+    # response = {"statusCode": 200, "body": json.dumps({
+    #     "presigned": presigned
+    # }), 'headers': {"Access-Control-Allow-Origin": "*"}, "Content-Type":"application/json"}
+    #
+    # return response
 
 
 # #set($inputRoot = $input.path('$.errorMessage'))
@@ -139,3 +164,24 @@ def lambda_handler(event, context):
 # #set($inputRoot = $input.path('$')) {
 #     "error": "$inputRoot.errorMessage"
 # }
+
+
+    # print("header")
+    # print((event['params']['header']['Authorization'])
+    # if 'Authorization' not in event['params']['header'] or not verify_identification_token(
+    #         event['params']['header']['Authorization']):
+    #     return {"statusCode": 403, "body": json.dumps({
+    #         "errorMessage": "failure"
+    #     }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type":"application/json"}}
+    #
+    # userID = verify_identification_token(event['params']['header']['Authorization'])
+    #
+    # user_upload_directory = get_user_upload_directory(userID)
+    # filename = event['body']['filename']
+    # presigned = create_presigned_post(BUCKET, '{}/{}'.format(user_upload_directory, filename))
+    #
+    # presigned['fields']['bucket'] = BUCKET
+    #
+    # response = {"statusCode": 200, "body": json.dumps({
+    #     "presigned": presigned
+    # }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type":"application/json"}}
