@@ -12,7 +12,7 @@ echo ${stackname}
 rm -rf package.yaml
 
 sam package \
-  --template-file template.yaml \
+  --template-file upload_api_template.yaml \
   --s3-bucket "dakobed-serverless-apis" \
   --output-template-file package.yaml
 

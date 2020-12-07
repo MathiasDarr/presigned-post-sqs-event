@@ -23,9 +23,21 @@ Resources:
       AttributeDefinitions:
       - AttributeName: email
         AttributeType: S
+      - AttributeName: upload_directory
+        AttributeType: S
       KeySchema:
       - AttributeName: email
         KeyType: HASH
+      GlobalSecondaryIndexes:
+      - IndexName: upload_directory_index
+        KeySchema:
+        - AttributeName: upload_directory
+          KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
       ProvisionedThroughput:
         ReadCapacityUnits: '1'
         WriteCapacityUnits: '1'
@@ -87,7 +99,7 @@ Resources:
       - DynamoDBCrudPolicy:
           TableName:
             Ref: UserTableName
-      CodeUri: s3://dakobed-serverless-apis/492dcfe36101f58d2f603f7e3a7f1959
+      CodeUri: s3://dakobed-serverless-apis/72e01057a52972087623f98527c9edb9
       Handler: app.lambda_handler
       Environment:
         Variables:

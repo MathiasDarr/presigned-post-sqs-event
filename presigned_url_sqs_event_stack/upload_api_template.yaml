@@ -43,8 +43,8 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: InitiateTransformsQueue
         - AWSLambdaBasicExecutionRole
-#        - DynamoDBCrudPolicy:
-#            TableName: UserUploads
+        - DynamoDBReadPolicy:
+            TableName: !Ref UserUploadTableName
       CodeUri: handlers/signedURL
       Handler: app.lambda_handler
       Runtime: python3.7
@@ -55,9 +55,11 @@ Resources:
       Environment:
         Variables:
           UploadBucket: !Ref BucketName
-          userpool_id: !ImportValue upload-api-userpool-stack:UserPool
-          app_client_id: !ImportValue upload-api-userpool-stack:UserPoolClient
+          userpool_id: !ImportValue upload-user-stack:UserPool
+          app_client_id: !ImportValue upload-user-stack:UserPoolClient
           region: !Ref Region
+          user_table: upload-user-stack:UserTableName
+
 
       Events:
         UploadApi:
@@ -157,14 +159,15 @@ Resources:
 #        - SQSSendMessagePolicy:
 #            QueueName: InitiateTransformsQueue
 #        - AWSLambdaBasicExecutionRole
-#        - DynamoDBCrudPolicy:
-#            TableName: !Ref UserUploadTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserUploadTableName
       CodeUri: handlers/verify_upload
       Handler: app.lambda_handler
       Environment:
         Variables:
           dynamo_endpoint: !Ref DynamoEndpoint
           user_upload_table: !Ref UserUploadTableName
+          user_table: !ImportValue upload-user-stack:UserTableName
 
       Runtime: python3.7
       Role: !GetAtt ProcessingLambdaExecutionRole.Arn
@@ -231,8 +234,8 @@ Outputs:
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'S3UploadBucket' ] ]
 
-#  UserUploadTable:
-#    Description: "API Gateway endpoint URL for Prod stage upload API"
-#    Value: !Ref BucketName
-#    Export:
-#      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UserUploadTable' ] ]
+  UserUploadTable:
+    Description: "API Gateway endpoint URL for Prod stage upload API"
+    Value: !Ref BucketName
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UserUploadTable' ] ]

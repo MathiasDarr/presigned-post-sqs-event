@@ -28,15 +28,31 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "email"
           AttributeType: "S"
+        - AttributeName: "upload_directory"
+          AttributeType: "S"
 
       KeySchema:
         - AttributeName: "email"
           KeyType: "HASH"
 
+      GlobalSecondaryIndexes:
+        -
+          IndexName: "upload_directory_index"
+          KeySchema:
+            -
+              AttributeName: "upload_directory"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+
 
       ProvisionedThroughput:
         ReadCapacityUnits: "1"
         WriteCapacityUnits: "1"
+
 
   SESRole:
     Type: "AWS::IAM::Role"

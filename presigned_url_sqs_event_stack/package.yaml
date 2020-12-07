@@ -40,7 +40,10 @@ Resources:
       - SQSSendMessagePolicy:
           QueueName: InitiateTransformsQueue
       - AWSLambdaBasicExecutionRole
-      CodeUri: s3://dakobed-serverless-apis/d8d6d02585aae7801b0a445900a5af24
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: UserUploadTableName
+      CodeUri: s3://dakobed-serverless-apis/e712303f87e0e0ae1ff94fba523df034
       Handler: app.lambda_handler
       Runtime: python3.7
       Layers:
@@ -50,11 +53,12 @@ Resources:
           UploadBucket:
             Ref: BucketName
           userpool_id:
-            Fn::ImportValue: upload-api-userpool-stack:UserPool
+            Fn::ImportValue: upload-user-stack:UserPool
           app_client_id:
-            Fn::ImportValue: upload-api-userpool-stack:UserPoolClient
+            Fn::ImportValue: upload-user-stack:UserPoolClient
           region:
             Ref: Region
+          user_table: upload-user-stack:UserTableName
       Events:
         UploadApi:
           Type: Api
@@ -142,8 +146,11 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      Policies: null
-      CodeUri: s3://dakobed-serverless-apis/ddb54a058e2e3ddd4d4f2426acef7424
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UserUploadTableName
+      CodeUri: s3://dakobed-serverless-apis/6822a1be1f649060665b949570460a37
       Handler: app.lambda_handler
       Environment:
         Variables:
@@ -151,6 +158,8 @@ Resources:
             Ref: DynamoEndpoint
           user_upload_table:
             Ref: UserUploadTableName
+          user_table:
+            Fn::ImportValue: upload-user-stack:UserTableName
       Runtime: python3.7
       Role:
         Fn::GetAtt:
