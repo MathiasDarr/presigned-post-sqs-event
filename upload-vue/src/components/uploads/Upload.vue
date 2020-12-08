@@ -37,7 +37,7 @@ export default {
                 
                 var name = this.file.name
                 console.log(name)
-                var url ='https://6xk6uqvvyf.execute-api.us-west-2.amazonaws.com/Prod/signedURL'
+                var url ='https://xjqtewsyu4.execute-api.us-west-2.amazonaws.com/Prod/signedURL'
                 var body = {filename:name}
                 
                 const response = await axios.post(url, body, {
@@ -58,18 +58,18 @@ export default {
                 var post_url = parsed_data['presigned']['url']
                 console.log(post_url)
                 // console.log(fields)
-                var options_headers = { "Access-Control-Request-Method" : "POST"}
+                // var options_headers = { "Access-Control-Request-Method" : "POST"}
               
-                let config = {
-                  headers: {
-                    "Access-Control-Request-Method" : "POST"
-                  }
-                }
-                var d = {}
+                // let config = {
+                //   headers: {
+                //     "Access-Control-Request-Method" : "POST"
+                //   }
+                // }
+                // var d = {}
 
-                await axios.options(post_url, d , config)
+                // await axios.options(post_url, d , config)
 
-              //  await fetch(parsed_data['presigned']['url'], {method:'POST', body: form})
+                await fetch(parsed_data['presigned']['url'], {method:'POST', body: form})
   
 
             }catch(err){
