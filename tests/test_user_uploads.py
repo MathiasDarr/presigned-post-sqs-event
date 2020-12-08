@@ -43,7 +43,6 @@ dynamodb = boto3.resource('dynamodb', region_name="us-west-2")
 table = dynamodb.Table('UserUploadTable')
 
 
-
 def authenticate_user(username, password):
     response = cidp.initiate_auth(AuthFlow='USER_PASSWORD_AUTH',
                                   AuthParameters={'USERNAME': username, 'PASSWORD': password},

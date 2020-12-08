@@ -232,6 +232,152 @@ Resources:
               - s3:DeleteObject
               Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
 
+  DeleteUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: DeleteUploadFunction
+#      Policies:
+#        - SQSSendMessagePolicy:
+#            QueueName: InitiateTransformsQueue
+#        - AWSLambdaBasicExecutionRole
+
+      CodeUri: handlers/delete_upload
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          dynamo_endpoint: !Ref DynamoEndpoint
+          user_upload_table: !Ref UserUploadTableName
+          user_table: Users
+
+      Runtime: python3.7
+      Role: !GetAtt DeleteUploadLambdaExecutionRole.Arn
+
+
+  DeleteUploadLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: dynamo_user_table_policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:Query
+              Resource: arn:aws:dynamodb:us-west-2:710339184759:table/Users/index/*
+
+        - PolicyName: dynamo_upload_table_policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DeleteItem
+                Resource: !GetAtt UserUploadTable.Arn
+
+        - PolicyName: allowLogging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: arn:aws:logs:*:*:*
+
+        - PolicyName: getAndDeleteObjects
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:DeleteObject
+              Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
+
+
+  RenameUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: RenameUploadFunction
+#      Policies:
+#        - SQSSendMessagePolicy:
+#            QueueName: InitiateTransformsQueue
+#        - AWSLambdaBasicExecutionRole
+
+      CodeUri: handlers/delete_upload
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          dynamo_endpoint: !Ref DynamoEndpoint
+          user_upload_table: !Ref UserUploadTableName
+          user_table: Users
+
+      Runtime: python3.7
+      Role: !GetAtt RenameUploadLambdaExecutionRole.Arn
+
+
+  RenameUploadLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: dynamo_user_table_policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:Query
+              Resource: arn:aws:dynamodb:us-west-2:710339184759:table/Users/index/*
+
+        - PolicyName: dynamo_upload_table_policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DeleteItem
+                Resource: !GetAtt UserUploadTable.Arn
+
+        - PolicyName: allowLogging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: arn:aws:logs:*:*:*
+
+        - PolicyName: getAndDeleteObjects
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:DeleteObject
+              Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
+
+
 Outputs:
   UploadApi:
     Description: "API Gateway endpoint URL for Prod stage upload API"
