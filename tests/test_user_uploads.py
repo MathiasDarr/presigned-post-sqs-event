@@ -34,7 +34,6 @@ for output in outputs:
 
 print(USER_POOL_CLIENT)
 print(USER_POOL)
-
 print(GATEWAY_PROD_URL)
 
 cidp = boto3.client('cognito-idp')
@@ -88,7 +87,6 @@ def test_dynamo_user_table():
 
     headers = {'Authorization': id_token}
 
-
     lambda_presigned_post = requests.post('{}/signedURL'.format(GATEWAY_PROD_URL), json=body, headers=headers)
     assert lambda_presigned_post.status_code == 200
 
@@ -124,6 +122,7 @@ def test_dynamo_user_table():
     item = response['Item']
     assert item['filename'] == fileName
     assert item['user'] == userID
+
 
 test_dynamo_user_table()
 
@@ -198,7 +197,7 @@ def test_user_upload_and_delete():
     assert 'item' not in get_item_response
     assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
-#test_user_upload_and_delete()
+# test_user_upload_and_delete()
 
 
 # test_user_upload_and_delete()
@@ -213,6 +212,3 @@ def test_user_upload_and_delete():
 # item = response['Item']
 # key = item['key']
 # s3.Object(S3__UPLOAD_BUCKET, key).delete()
-
-
-

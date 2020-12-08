@@ -3,19 +3,34 @@ import os
 from boto3.dynamodb.conditions import Key
 import json
 
-dynamo_endpoint = os.getenv('dynamo_endpoint')
-if dynamo_endpoint == 'cloud':
-    dynamo_resource = boto3.resource('dynamodb')
-else:
-    dynamo_resource = boto3.resource('dynamodb', endpoint_url=dynamo_endpoint)
 
-UPLOAD_TABLE_NAME = os.getenv('user_upload_table')
-# USER_TABLE_NAME = os.getenv('user_table')
-# USER_TABLE_NAME ='Users'
-upload_table = dynamo_resource.Table(UPLOAD_TABLE_NAME)
-user_table = dynamo_resource.Table('Users')
+transform_queue_name = os.getenv('transform_queue')
+sqs = boto3.resource('sqs', region_name='us-west-2')
+queue = sqs.get_queue_by_name(QueueName='LibrosaTransformsQueue')
 
-region = 'us-west-2'
+
+# sqs_client = boto3.client('sqs', region_name='us-west-2')
+# queue_url = sqs_client.get_queue_url(QueueName='LibrosaTransformsQueue')
+
+
+
+
+# queue = sqs.get_queue_by_name(QueueName="https://sqs.us-west-2.amazonaws.com/710339184759/LibrosaTransformsQueue")
+
+
+# dynamo_endpoint = os.getenv('dynamo_endpoint')
+# if dynamo_endpoint == 'cloud':
+#     dynamo_resource = boto3.resource('dynamodb')
+# else:
+#     dynamo_resource = boto3.resource('dynamodb', endpoint_url=dynamo_endpoint)
+#
+# UPLOAD_TABLE_NAME = os.getenv('user_upload_table')
+# # USER_TABLE_NAME = os.getenv('user_table')
+# # USER_TABLE_NAME ='Users'
+# upload_table = dynamo_resource.Table(UPLOAD_TABLE_NAME)
+# user_table = dynamo_resource.Table('Users')
+#
+# region = 'us-west-2'
 
 
 def get_user_email_from_directory(upload_directory):
@@ -51,16 +66,19 @@ def lambda_handler(event, context):
     :param context:
     :return:
     """
-    records = event['Records']
-    r1 = records[0]
-    s3_record = r1['s3']
-    bucket = s3_record['bucket']['name']
-    key = s3_record['object']['key']
-
-    upload_directory = key.split('/')[0]
-    userid = get_user_email_from_directory(upload_directory)
-
-    filename = key.split('/')[-1]
-    object_url = 'http://{}-{}.amazonaws.com/{}'.format(bucket, region, key)
-    upload = {'filename': filename, 'fileurl': object_url, 'user': userid, 'key':key}
-    insert_user_upload(upload)
+    print(transform_queue_name)
+    queue.send_message(MessageBody=json.dumps({'bucket': 'dakobed-transcriptions', 'user': 'mddarr', 'path': 'mddarr/blues.wav'}))
+    return "heu"
+    # records = event['Records']
+    # r1 = records[0]
+    # s3_record = r1['s3']
+    # bucket = s3_record['bucket']['name']
+    # key = s3_record['object']['key']
+    #
+    # upload_directory = key.split('/')[0]
+    # userid = get_user_email_from_directory(upload_directory)
+    #
+    # filename = key.split('/')[-1]
+    # object_url = 'http://{}-{}.amazonaws.com/{}'.format(bucket, region, key)
+    # upload = {'filename': filename, 'fileurl': object_url, 'user': userid, 'key': key}
+    # insert_user_upload(upload)

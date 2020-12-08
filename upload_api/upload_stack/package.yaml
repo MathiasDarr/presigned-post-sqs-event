@@ -69,29 +69,6 @@ Resources:
           - POST
           AllowedOrigins:
           - '*'
-  TransformQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName:
-        Ref: QueueName
-  SQSQueuePolicy:
-    Type: AWS::SQS::QueuePolicy
-    DependsOn: TransformQueue
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            AWS: '*'
-          Action: SQS:SendMessage
-          Resource: '*'
-          Condition:
-            ArnLike:
-              aws:SourceArn:
-                Fn::Sub: arn:aws:s3:::${BucketName}
-      Queues:
-      - Ref: TransformQueue
   PresignedPostUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -145,7 +122,7 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/638e922f6541a1d655075fccd877fd9c
+      CodeUri: s3://dakobed-serverless-apis/6c6b97e6cbc311ed57507b172187ea78
       Handler: app.lambda_handler
       Environment:
         Variables:
@@ -153,7 +130,9 @@ Resources:
             Ref: DynamoEndpoint
           user_upload_table:
             Ref: UserUploadTableName
-          user_table: Uses
+          user_table: Users
+          transform_queue:
+            Ref: QueueName
       Runtime: python3.7
       Role:
         Fn::GetAtt:
@@ -170,6 +149,31 @@ Resources:
         Fn::Sub: arn:aws:s3:::${BucketName}
       SourceAccount:
         Ref: AWS::AccountId
+  TransformQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName:
+        Ref: QueueName
+  SQSQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: TransformQueue
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: '*'
+          Action: SQS:SendMessage
+          Resource: '*'
+          Condition:
+            ArnLike:
+              aws:SourceArn:
+                Fn::GetAtt:
+                - VerifyUploadFunction
+                - Arn
+      Queues:
+      - Ref: TransformQueue
   ProcessingLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -220,6 +224,23 @@ Resources:
             - s3:DeleteObject
             Resource:
               Fn::Sub: arn:aws:s3:::${BucketName}/*
+      - PolicyName: sendMessagesQueue
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - sqs:GetQueueAttributes,
+            - sqs:SendMessage,
+            - sqs:ReceiveMessage,
+            - sqs:DeleteMessage,
+            - sqs:DeleteMessageBatch,
+            - sqs:GetQueueUrl
+            - sqs:sendMessage
+            Resource:
+              Fn::GetAtt:
+              - TransformQueue
+              - Arn
   DeleteUploadFunction:
     Type: AWS::Serverless::Function
     Properties:

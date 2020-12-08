@@ -79,30 +79,6 @@ Resources:
           AllowedOrigins:
             - "*"
 
-  TransformQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref QueueName
-
-  SQSQueuePolicy:
-    Type: AWS::SQS::QueuePolicy
-    DependsOn: TransformQueue
-    Properties:
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS: "*"
-            Action: SQS:SendMessage
-            Resource: "*"
-            Condition:
-              ArnLike:
-                aws:SourceArn: !Sub 'arn:aws:s3:::${BucketName}'
-      Queues:
-        - !Ref TransformQueue
-
-
   PresignedPostUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -165,7 +141,8 @@ Resources:
         Variables:
           dynamo_endpoint: !Ref DynamoEndpoint
           user_upload_table: !Ref UserUploadTableName
-          user_table: Uses
+          user_table: Users
+          transform_queue: !Ref QueueName
 
       Runtime: python3.7
       Role: !GetAtt ProcessingLambdaExecutionRole.Arn
@@ -178,6 +155,30 @@ Resources:
       Principal: s3.amazonaws.com
       SourceArn: !Sub 'arn:aws:s3:::${BucketName}'
       SourceAccount: !Ref AWS::AccountId
+
+  TransformQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref QueueName
+
+  SQSQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn: TransformQueue
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: SQS:SendMessage
+            Resource: "*"
+            Condition:
+              ArnLike:
+                aws:SourceArn: !GetAtt VerifyUploadFunction.Arn
+      Queues:
+        - !Ref TransformQueue
+
 
 
   ProcessingLambdaExecutionRole:
@@ -212,7 +213,6 @@ Resources:
                   - dynamodb:PutItem
                 Resource: !GetAtt UserUploadTable.Arn
 
-
         - PolicyName: allowLogging
           PolicyDocument:
             Version: '2012-10-17'
@@ -230,6 +230,23 @@ Resources:
               - s3:GetObject
               - s3:DeleteObject
               Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
+
+        - PolicyName: sendMessagesQueue
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - sqs:GetQueueAttributes,
+              - sqs:SendMessage,
+              - sqs:ReceiveMessage,
+              - sqs:DeleteMessage,
+              - sqs:DeleteMessageBatch,
+              - sqs:GetQueueUrl
+              - sqs:sendMessage
+              Resource:  !GetAtt TransformQueue.Arn
+
+
 
   DeleteUploadFunction:
     Type: AWS::Serverless::Function
@@ -400,6 +417,7 @@ Resources:
               - s3:GetObject
               - s3:DeleteObject
               Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
+
 
 
 Outputs:
