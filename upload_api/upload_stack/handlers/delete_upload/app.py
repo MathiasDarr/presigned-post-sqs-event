@@ -8,7 +8,8 @@ from jose import jwk, jwt
 from jose.utils import base64url_decode
 import json
 
-# BUCKET = os.getenv('UploadBucket')
+BUCKET = os.getenv('UploadBucket')
+s3 = boto3.resource('s3')
 
 dynamo_endpoint = os.getenv('dynamo_endpoint')
 if dynamo_endpoint == 'cloud':
@@ -83,21 +84,60 @@ def delete_user_upload(user, filename):
     return response
 
 
+def get_user_upload_key(user, filename):
+    response = upload_table.get_item(
+        Key={
+            'user': user,
+            'filename': filename
+        }
+    )
+    return response['Item']['key']
+
+
+def remove_file_from_s3(key):
+    s3.Object(BUCKET, key).delete()
+
+
 def lambda_handler(event, context):
+    # user = "dakobedbard@gmail.com"
+    # filename = "jazz3_solo.wav"
+    # key = get_user_upload_key(user, filename)
+    # resp = remove_file_from_s3(key)
+
     if 'Authorization' not in event['params']['header'] or not verify_identification_token(
             event['params']['header']['Authorization']):
         return {"statusCode": 403, "body": json.dumps({
             "errorMessage": "failure"
         }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
 
-    userID = verify_identification_token(event['params']['header']['Authorization'])
+    user = verify_identification_token(event['params']['header']['Authorization'])
     filename = event['params']['path']['filename']
+    key = get_user_upload_key(user, filename)
 
-    delete_user_upload(userID, filename)
+    remove_file_from_s3(key)
 
+    delete_user_upload(user, filename)
 
     response = {"statusCode": 200, "body": json.dumps({
-        "presigned": userID,
+        "presigned": key,
     }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
     return response
 
+
+    # if 'Authorization' not in event['params']['header'] or not verify_identification_token(
+    #         event['params']['header']['Authorization']):
+    #     return {"statusCode": 403, "body": json.dumps({
+    #         "errorMessage": "failure"
+    #     }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
+    #
+    # user = verify_identification_token(event['params']['header']['Authorization'])
+    # filename = event['params']['path']['filename']
+    #
+    # key = get_user_upload_key(user, filename)
+    # remove_file_from_s3(key)
+    # delete_user_upload(user, filename)
+    #
+    # response = {"statusCode": 200, "body": json.dumps({
+    #     "presigned": user,
+    # }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
+    # return response

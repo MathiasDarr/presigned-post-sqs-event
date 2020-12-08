@@ -145,7 +145,7 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/e6c9418768861e9868db8115a1e58c10
+      CodeUri: s3://dakobed-serverless-apis/638e922f6541a1d655075fccd877fd9c
       Handler: app.lambda_handler
       Environment:
         Variables:
@@ -225,7 +225,7 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: DeleteUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/ef8e559b15a876a17a1a045b59f457a8
+      CodeUri: s3://dakobed-serverless-apis/1e2f00d1822a663a060651aa4911f3d7
       Handler: app.lambda_handler
       Environment:
         Variables:
@@ -280,6 +280,7 @@ Resources:
           Statement:
           - Effect: Allow
             Action:
+            - dynamodb:GetItem
             - dynamodb:DeleteItem
             Resource:
               Fn::GetAtt:
@@ -318,7 +319,7 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: RenameUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/ef8e559b15a876a17a1a045b59f457a8
+      CodeUri: s3://dakobed-serverless-apis/1e2f00d1822a663a060651aa4911f3d7
       Handler: app.lambda_handler
       Layers:
       - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer

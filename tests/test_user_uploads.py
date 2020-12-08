@@ -196,8 +196,9 @@ def test_user_upload_and_delete():
 
     get_item_response = get_user_upload(userID, fileName)
     assert 'item' not in get_item_response
+    assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
-test_user_upload_and_delete()
+#test_user_upload_and_delete()
 
 
 # test_user_upload_and_delete()
@@ -212,14 +213,6 @@ test_user_upload_and_delete()
 # item = response['Item']
 # key = item['key']
 # s3.Object(S3__UPLOAD_BUCKET, key).delete()
-
-
-
-
-
-
-
-
 
 
 

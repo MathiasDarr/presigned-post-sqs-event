@@ -291,6 +291,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - dynamodb:GetItem
                   - dynamodb:DeleteItem
                 Resource: !GetAtt UserUploadTable.Arn
 
@@ -311,6 +312,7 @@ Resources:
               Action:
               - s3:GetObject
               - s3:DeleteObject
+#              Resource: !GetAtt S3UploadBucket.Arn
               Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
 
   DeleteUploadLambdaPermission:
