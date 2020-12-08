@@ -8,7 +8,7 @@ from jose import jwk, jwt
 from jose.utils import base64url_decode
 import json
 
-BUCKET = os.getenv('UploadBucket')
+# BUCKET = os.getenv('UploadBucket')
 
 dynamo_endpoint = os.getenv('dynamo_endpoint')
 if dynamo_endpoint == 'cloud':
@@ -16,15 +16,11 @@ if dynamo_endpoint == 'cloud':
 else:
     dynamo_resource = boto3.resource('dynamodb', endpoint_url=dynamo_endpoint)
 
-USER_TABLE_NAME = os.getenv('user_table')
-user_table = dynamo_resource.Table('Users')
+upload_table = dynamo_resource.Table('UserUploadTable')
 
 region = os.getenv('region')
 userpool_id = os.getenv('userpool_id')
 app_client_id = os.getenv('app_client_id')
-
-print("APP CLIENT ID")
-print(app_client_id)
 
 keys_url = 'https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json'.format(region, userpool_id)
 
@@ -77,18 +73,15 @@ def verify_identification_token(token):
     return claims['email']
 
 
-def get_user_upload_directory(user_email):
-    """
-    This function returns the folder/directory that their uploads are saved.
-    :param user_email:
-    :return:
-    """
-    response = user_table.get_item(
+def delete_user_upload(user, filename):
+    response = upload_table.delete_item(
         Key={
-            'email': user_email,
+            'user': user,
+            'filename': filename
         }
     )
-    return response['Item']['upload_directory']
+    return response
+
 
 def lambda_handler(event, context):
     if 'Authorization' not in event['params']['header'] or not verify_identification_token(
@@ -98,12 +91,13 @@ def lambda_handler(event, context):
         }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
 
     userID = verify_identification_token(event['params']['header']['Authorization'])
+    filename = event['params']['path']['filename']
 
-    filename = event['body']['filename']
+    delete_user_upload(userID, filename)
 
 
     response = {"statusCode": 200, "body": json.dumps({
-        "presigned": "delete"
+        "presigned": userID,
     }), 'headers': {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"}}
     return response
 

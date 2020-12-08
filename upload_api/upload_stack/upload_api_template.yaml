@@ -32,54 +32,6 @@ Resources:
       StageName: Prod
       DefinitionUri: ./swagger.yaml
 
-  PresignedPostUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 10
-      FunctionName: PresignedPostUploadFunction
-      Policies:
-        - S3CrudPolicy:
-            BucketName: !Ref BucketName
-        - SQSSendMessagePolicy:
-            QueueName: InitiateTransformsQueue
-        - AWSLambdaBasicExecutionRole
-        - DynamoDBReadPolicy:
-            TableName: Users
-      CodeUri: handlers/signedURL
-      Handler: app.lambda_handler
-      Runtime: python3.7
-
-      Layers:
-        - !ImportValue upload-authorization-layer-stack:AuthorizationLayer
-
-      Environment:
-        Variables:
-          UploadBucket: !Ref BucketName
-          userpool_id: !ImportValue upload-user-stack:UserPool
-          app_client_id: !ImportValue upload-user-stack:UserPoolClient
-          region: !Ref Region
-          user_table: Users
-
-
-      Events:
-        UploadApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref UploadApi
-            Path: /signedURL
-            Method: POST
-
-  ConfigLambdaPermission:
-    Type: "AWS::Lambda::Permission"
-    DependsOn:
-    - UploadApi
-    - PresignedPostUploadFunction
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref PresignedPostUploadFunction
-      Principal: apigateway.amazonaws.com
-
-
   UserUploadTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -149,6 +101,53 @@ Resources:
                 aws:SourceArn: !Sub 'arn:aws:s3:::${BucketName}'
       Queues:
         - !Ref TransformQueue
+
+
+  PresignedPostUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: PresignedPostUploadFunction
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref BucketName
+        - SQSSendMessagePolicy:
+            QueueName: InitiateTransformsQueue
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBReadPolicy:
+            TableName: Users
+      CodeUri: handlers/signedURL
+      Handler: app.lambda_handler
+      Runtime: python3.7
+
+      Layers:
+        - !ImportValue upload-authorization-layer-stack:AuthorizationLayer
+
+      Environment:
+        Variables:
+          UploadBucket: !Ref BucketName
+          userpool_id: !ImportValue upload-user-stack:UserPool
+          app_client_id: !ImportValue upload-user-stack:UserPoolClient
+          region: !Ref Region
+          user_table: Users
+      Events:
+        UploadApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref UploadApi
+            Path: /signedURL
+            Method: POST
+
+  ConfigLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - UploadApi
+    - PresignedPostUploadFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PresignedPostUploadFunction
+      Principal: apigateway.amazonaws.com
+
 
   VerifyUploadFunction:
     Type: AWS::Serverless::Function
@@ -246,13 +245,23 @@ Resources:
       Handler: app.lambda_handler
       Environment:
         Variables:
-          dynamo_endpoint: !Ref DynamoEndpoint
-          user_upload_table: !Ref UserUploadTableName
+          UploadBucket: !Ref BucketName
+          userpool_id: !ImportValue upload-user-stack:UserPool
+          app_client_id: !ImportValue upload-user-stack:UserPoolClient
+          region: !Ref Region
           user_table: Users
 
       Runtime: python3.7
+      Layers:
+        - !ImportValue upload-authorization-layer-stack:AuthorizationLayer
       Role: !GetAtt DeleteUploadLambdaExecutionRole.Arn
-
+      Events:
+        UploadApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref UploadApi
+            Path: /upload/{filename}
+            Method: DELETE
 
   DeleteUploadLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -304,6 +313,17 @@ Resources:
               - s3:DeleteObject
               Resource:  !Sub 'arn:aws:s3:::${BucketName}/*'
 
+  DeleteUploadLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - UploadApi
+    - DeleteUploadFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DeleteUploadFunction
+      Principal: apigateway.amazonaws.com
+
+
 
   RenameUploadFunction:
     Type: AWS::Serverless::Function
@@ -317,6 +337,8 @@ Resources:
 
       CodeUri: handlers/delete_upload
       Handler: app.lambda_handler
+      Layers:
+        - !ImportValue upload-authorization-layer-stack:AuthorizationLayer
       Environment:
         Variables:
           dynamo_endpoint: !Ref DynamoEndpoint
@@ -381,7 +403,7 @@ Resources:
 Outputs:
   UploadApi:
     Description: "API Gateway endpoint URL for Prod stage upload API"
-    Value: !Sub "https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/signedURL"
+    Value: !Sub "https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'UploadApi' ] ]
 

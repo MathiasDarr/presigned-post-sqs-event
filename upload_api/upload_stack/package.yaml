@@ -27,55 +27,7 @@ Resources:
     Properties:
       Name: UploadApi
       StageName: Prod
-      DefinitionUri: s3://dakobed-serverless-apis/d630a94863310b6c9aaee994ed500ee1
-  PresignedPostUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 10
-      FunctionName: PresignedPostUploadFunction
-      Policies:
-      - S3CrudPolicy:
-          BucketName:
-            Ref: BucketName
-      - SQSSendMessagePolicy:
-          QueueName: InitiateTransformsQueue
-      - AWSLambdaBasicExecutionRole
-      - DynamoDBReadPolicy:
-          TableName: Users
-      CodeUri: s3://dakobed-serverless-apis/d646613336bbd07763f3f354ee996458
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Layers:
-      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
-      Environment:
-        Variables:
-          UploadBucket:
-            Ref: BucketName
-          userpool_id:
-            Fn::ImportValue: upload-user-stack:UserPool
-          app_client_id:
-            Fn::ImportValue: upload-user-stack:UserPoolClient
-          region:
-            Ref: Region
-          user_table: Users
-      Events:
-        UploadApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: UploadApi
-            Path: /signedURL
-            Method: POST
-  ConfigLambdaPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-    - UploadApi
-    - PresignedPostUploadFunction
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName:
-        Ref: PresignedPostUploadFunction
-      Principal: apigateway.amazonaws.com
+      DefinitionUri: s3://dakobed-serverless-apis/193ae62cc4c815eaa8b3f72cbce0f9cf
   UserUploadTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -140,6 +92,54 @@ Resources:
                 Fn::Sub: arn:aws:s3:::${BucketName}
       Queues:
       - Ref: TransformQueue
+  PresignedPostUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      FunctionName: PresignedPostUploadFunction
+      Policies:
+      - S3CrudPolicy:
+          BucketName:
+            Ref: BucketName
+      - SQSSendMessagePolicy:
+          QueueName: InitiateTransformsQueue
+      - AWSLambdaBasicExecutionRole
+      - DynamoDBReadPolicy:
+          TableName: Users
+      CodeUri: s3://dakobed-serverless-apis/d646613336bbd07763f3f354ee996458
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Layers:
+      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
+      Environment:
+        Variables:
+          UploadBucket:
+            Ref: BucketName
+          userpool_id:
+            Fn::ImportValue: upload-user-stack:UserPool
+          app_client_id:
+            Fn::ImportValue: upload-user-stack:UserPoolClient
+          region:
+            Ref: Region
+          user_table: Users
+      Events:
+        UploadApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: UploadApi
+            Path: /signedURL
+            Method: POST
+  ConfigLambdaPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - UploadApi
+    - PresignedPostUploadFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: PresignedPostUploadFunction
+      Principal: apigateway.amazonaws.com
   VerifyUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -225,20 +225,34 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: DeleteUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/971186910697cd346d2fb0c474178ce5
+      CodeUri: s3://dakobed-serverless-apis/ef8e559b15a876a17a1a045b59f457a8
       Handler: app.lambda_handler
       Environment:
         Variables:
-          dynamo_endpoint:
-            Ref: DynamoEndpoint
-          user_upload_table:
-            Ref: UserUploadTableName
+          UploadBucket:
+            Ref: BucketName
+          userpool_id:
+            Fn::ImportValue: upload-user-stack:UserPool
+          app_client_id:
+            Fn::ImportValue: upload-user-stack:UserPoolClient
+          region:
+            Ref: Region
           user_table: Users
       Runtime: python3.7
+      Layers:
+      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
       Role:
         Fn::GetAtt:
         - DeleteUploadLambdaExecutionRole
         - Arn
+      Events:
+        UploadApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: UploadApi
+            Path: /upload/{filename}
+            Method: DELETE
   DeleteUploadLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -289,13 +303,25 @@ Resources:
             - s3:DeleteObject
             Resource:
               Fn::Sub: arn:aws:s3:::${BucketName}/*
+  DeleteUploadLambdaPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - UploadApi
+    - DeleteUploadFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: DeleteUploadFunction
+      Principal: apigateway.amazonaws.com
   RenameUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
       Timeout: 10
       FunctionName: RenameUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/971186910697cd346d2fb0c474178ce5
+      CodeUri: s3://dakobed-serverless-apis/ef8e559b15a876a17a1a045b59f457a8
       Handler: app.lambda_handler
+      Layers:
+      - Fn::ImportValue: upload-authorization-layer-stack:AuthorizationLayer
       Environment:
         Variables:
           dynamo_endpoint:
@@ -362,7 +388,7 @@ Outputs:
   UploadApi:
     Description: API Gateway endpoint URL for Prod stage upload API
     Value:
-      Fn::Sub: https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/signedURL
+      Fn::Sub: https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod
     Export:
       Name:
         Fn::Join:
