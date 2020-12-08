@@ -42,6 +42,9 @@ cidp = boto3.client('cognito-idp')
 dynamodb = boto3.resource('dynamodb', region_name="us-west-2")
 table = dynamodb.Table('UserUploadTable')
 
+s3_client = boto3.client('s3')
+s3 = boto3.resource('s3')
+
 
 def authenticate_user(username, password):
     response = cidp.initiate_auth(AuthFlow='USER_PASSWORD_AUTH',
@@ -77,10 +80,8 @@ def test_dynamo_user_table():
 
     key = '{}/{}'.format(user, fileName)
 
-    s3 = boto3.resource('s3')
     s3.Object(S3__UPLOAD_BUCKET, key).delete()
 
-    s3_client = boto3.client('s3')
     # assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
     body = {"filename": fileName, "userID": userID}
@@ -127,76 +128,77 @@ def test_dynamo_user_table():
 #test_dynamo_user_table()
 
 
+def test_user_upload_and_delete():
+    fileName = 'small.jpg'
+    user = 'dakobedbard_gmail'
+    userID = "dakobedbard@gmail.com"
+    password = '1!ZionTF'
 
-fileName = 'small.jpg'
-user = 'dakobedbard_gmail'
-userID = "dakobedbard@gmail.com"
+    id_token = authenticate_user(userID, password)
 
-password = '1!ZionTF'
+    key = '{}/{}'.format(user, fileName)
 
-id_token = authenticate_user(userID, password)
+    s3.Object(S3__UPLOAD_BUCKET, key).delete()
 
-key = '{}/{}'.format(user, fileName)
+    assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
-s3 = boto3.resource('s3')
-s3.Object(S3__UPLOAD_BUCKET, key).delete()
+    body = {"filename": fileName, "userID": userID}
+    headers = {'Authorization': id_token}
 
-s3_client = boto3.client('s3')
-# assert not verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
+    presigned_url = '{}/signedURL'.format(GATEWAY_PROD_URL)
+    lambda_presigned_post = requests.post(presigned_url, json=body, headers=headers)
+    assert lambda_presigned_post.status_code == 200
 
-body = {"filename": fileName, "userID": userID}
+    response = table.get_item(
+        Key={
+            'user': userID,
+            'filename': fileName
+        }
+    )
+    assert 'item' not in response
 
-headers = {'Authorization': id_token}
+    response_body = json.loads(lambda_presigned_post.json()['body'])  # ['presigned']
+    presigned = response_body['presigned']
+    fields = presigned['fields']
+    response = {'url': presigned['url'], 'fields': fields}
 
-lambda_presigned_post = requests.post(GATEWAY_PROD_URL, json=body, headers=headers)
-assert lambda_presigned_post.status_code == 200
+    with open(fileName, 'rb') as f:
+        files = {'file': (fileName, f)}
+        http_response = requests.post(response['url'], data=response['fields'], files=files)
 
-response = table.get_item(
-    Key={
-        'user': userID,
-        'filename': fileName
-    }
-)
-assert 'item' not in response
+    assert http_response.status_code == 204
+    assert verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
-response_body = json.loads(lambda_presigned_post.json()['body'])  # ['presigned']
-presigned = response_body['presigned']
-fields = presigned['fields']
-response = {'url': presigned['url'], 'fields': fields}
+    time.sleep(5)
+    response = table.get_item(
+        Key={
+            'user': userID,
+            'filename': fileName
+        }
+    )
 
-with open(fileName, 'rb') as f:
-    files = {'file': (fileName, f)}
-    http_response = requests.post(response['url'], data=response['fields'], files=files)
+    assert 'item' not in response
+    item = response['Item']
+    assert item['filename'] == fileName
+    assert item['user'] == userID
 
-assert http_response.status_code == 204
-assert verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
+    id_token = authenticate_user(userID, password)
 
-time.sleep(5)
-response = table.get_item(
-    Key={
-        'user': userID,
-        'filename': fileName
-    }
-)
+    key = '{}/{}'.format(user, fileName)
 
-assert 'item' not in response
-item = response['Item']
-assert item['filename'] == fileName
-assert item['user'] == userID
+    body = {"filename": fileName, "userID": userID}
+    headers = {'Authorization': id_token}
+    delete_url = '{}/upload/{}'.format(GATEWAY_PROD_URL,fileName)
 
+    delete_request_response = requests.delete(delete_url, headers=headers)
 
+    time.sleep(5)
+    response = table.get_item(
+        Key={
+            'user': userID,
+            'filename': fileName
+        }
+    )
+    assert 'item' not in response
 
-id_token = authenticate_user(userID, password)
-print(id_token)
-
-key = '{}/{}'.format(user, fileName)
-
-
-body = {"filename": fileName, "userID": userID}
-headers = {'Authorization': id_token}
-delete_url = '{}/upload/{}'.format(GATEWAY_PROD_URL,fileName)
-print(delete_url)
-
-
-delete_request_response = requests.delete(delete_url, headers=headers)
-print(delete_request_response)
+test_user_upload_and_delete()
