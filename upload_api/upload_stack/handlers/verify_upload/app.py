@@ -37,6 +37,7 @@ def insert_user_upload(upload):
             'user': upload['user'],
             'filename': upload['filename'],
             'fileurl': upload['fileurl'],
+            'key': upload['key']
         }
     )
 
@@ -61,6 +62,5 @@ def lambda_handler(event, context):
 
     filename = key.split('/')[-1]
     object_url = 'http://{}-{}.amazonaws.com/{}'.format(bucket, region, key)
-
-    upload = {'filename': filename, 'fileurl': object_url, 'user': userid}
+    upload = {'filename': filename, 'fileurl': object_url, 'user': userid, 'key':key}
     insert_user_upload(upload)

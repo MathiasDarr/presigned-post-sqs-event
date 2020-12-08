@@ -125,11 +125,21 @@ def test_dynamo_user_table():
     assert item['filename'] == fileName
     assert item['user'] == userID
 
-#test_dynamo_user_table()
+test_dynamo_user_table()
+
+
+def get_user_upload(user, filename):
+    response = table.get_item(
+        Key={
+            'user': user,
+            'filename': filename
+        }
+    )
+    return response
 
 
 def test_user_upload_and_delete():
-    fileName = 'small.jpg'
+    fileName = 'jazz3_solo.wav'
     user = 'dakobedbard_gmail'
     userID = "dakobedbard@gmail.com"
     password = '1!ZionTF'
@@ -149,13 +159,8 @@ def test_user_upload_and_delete():
     lambda_presigned_post = requests.post(presigned_url, json=body, headers=headers)
     assert lambda_presigned_post.status_code == 200
 
-    response = table.get_item(
-        Key={
-            'user': userID,
-            'filename': fileName
-        }
-    )
-    assert 'item' not in response
+    get_item_response = get_user_upload(userID, fileName)
+    assert 'item' not in get_item_response
 
     response_body = json.loads(lambda_presigned_post.json()['body'])  # ['presigned']
     presigned = response_body['presigned']
@@ -170,35 +175,51 @@ def test_user_upload_and_delete():
     assert verify_object_exists(s3_client, S3__UPLOAD_BUCKET, key)
 
     time.sleep(5)
-    response = table.get_item(
-        Key={
-            'user': userID,
-            'filename': fileName
-        }
-    )
 
-    assert 'item' not in response
-    item = response['Item']
+    get_item_response = get_user_upload(userID, fileName)
+    assert 'item' not in get_item_response
+
+    item = get_item_response['Item']
     assert item['filename'] == fileName
     assert item['user'] == userID
 
     id_token = authenticate_user(userID, password)
 
     key = '{}/{}'.format(user, fileName)
-
     body = {"filename": fileName, "userID": userID}
     headers = {'Authorization': id_token}
-    delete_url = '{}/upload/{}'.format(GATEWAY_PROD_URL,fileName)
+    delete_url = '{}/upload/{}'.format(GATEWAY_PROD_URL, fileName)
 
     delete_request_response = requests.delete(delete_url, headers=headers)
 
     time.sleep(5)
-    response = table.get_item(
-        Key={
-            'user': userID,
-            'filename': fileName
-        }
-    )
-    assert 'item' not in response
+
+    get_item_response = get_user_upload(userID, fileName)
+    assert 'item' not in get_item_response
 
 test_user_upload_and_delete()
+
+
+# test_user_upload_and_delete()
+#
+# fileName = 'small.jpg'
+# user = 'dakobedbard_gmail'
+# userID = "dakobedbard@gmail.com"
+# password = '1!ZionTF'
+#
+#
+# response = get_user_upload(userID, fileName)
+# item = response['Item']
+# key = item['key']
+# s3.Object(S3__UPLOAD_BUCKET, key).delete()
+
+
+
+
+
+
+
+
+
+
+
