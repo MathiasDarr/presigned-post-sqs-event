@@ -247,7 +247,6 @@ Resources:
               Resource:  !GetAtt TransformQueue.Arn
 
 
-
   DeleteUploadFunction:
     Type: AWS::Serverless::Function
     Properties:

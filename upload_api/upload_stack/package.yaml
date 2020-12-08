@@ -122,7 +122,7 @@ Resources:
     Properties:
       Timeout: 10
       FunctionName: VerifyUploadFunction
-      CodeUri: s3://dakobed-serverless-apis/6c6b97e6cbc311ed57507b172187ea78
+      CodeUri: s3://dakobed-serverless-apis/ecb37a54d2e9b0244f12fb30534b2182
       Handler: app.lambda_handler
       Environment:
         Variables:
