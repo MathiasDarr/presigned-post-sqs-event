@@ -23,7 +23,10 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          yum install ec2-net-utils -y
+          yum install libXcomposite libXcursor libXi libXtst libXrandr alsa-lib mesa-libEGL libXdamage mesa-libGL libXScrnSaver -y
+          yum install python3 -y
+          wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
+          sh Anaconda3-2020.02-Linux-x86_64.sh
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
